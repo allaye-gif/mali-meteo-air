@@ -1,173 +1,230 @@
-import { useRef } from 'react';
-import { DailySummary, getAQIColor, getAQILabel } from '@/lib/air-quality';
-import { Download, MapPin, Wind, Droplets, Activity, Info } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { DailySummary, getAQILabel } from '@/lib/air-quality';
+import { Download, MapPin, Activity, Info, Wind } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { cn } from '@/lib/utils';
 
 interface BulletinProps {
   data: DailySummary;
   onReset: () => void;
 }
 
+// Custom soft colors for AQI (hardcoded for safety with html2canvas)
+const getSoftAQIColor = (aqi: number) => {
+  if (aqi <= 50) return "#8DA399"; // Sage
+  if (aqi <= 100) return "#E6C76C"; // Soft Yellow
+  if (aqi <= 150) return "#E6A573"; // Soft Orange
+  if (aqi <= 200) return "#D68585"; // Soft Red
+  if (aqi <= 300) return "#A890B0"; // Soft Purple
+  return "#7A5C61"; // Soft Maroon
+};
+
+const getSoftAQIBg = (aqi: number) => {
+  if (aqi <= 50) return "#F1F7F4"; 
+  if (aqi <= 100) return "#FCFBF4"; 
+  if (aqi <= 150) return "#FCF6F2"; 
+  if (aqi <= 200) return "#FCF2F2"; 
+  if (aqi <= 300) return "#F6F2F8"; 
+  return "#F3F0F1"; 
+};
+
 export function Bulletin({ data, onReset }: BulletinProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleDownload = async () => {
     if (!contentRef.current) return;
+    setIsGenerating(true);
     
-    const canvas = await html2canvas(contentRef.current, {
-      scale: 2, // Higher quality
-      backgroundColor: '#f8fafc', // Match bg-background
-    });
-    
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: [canvas.width, canvas.height]
-    });
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-    pdf.save(`Bulletin-Air-Bamako-${data.date.replace(/\//g, '-')}.pdf`);
+    try {
+      // Force a small delay to ensure fonts render
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        backgroundColor: '#FDFCF8', // Match soft-bg
+        logging: false,
+        useCORS: true,
+        // Remove unsupported features if any
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      
+      // A4 size in px at 72dpi is approx 595 x 842
+      // We'll just fit the image
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2] // Scaled down for PDF view
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`Bulletin-Bamako-${data.date.replace(/\//g, '-')}.pdf`);
+    } catch (err) {
+      console.error("PDF Generation failed", err);
+      alert("Erreur lors de la génération du PDF. Veuillez réessayer.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
+  const mainColor = getSoftAQIColor(data.cityAverageAQI);
+  const mainBg = getSoftAQIBg(data.cityAverageAQI);
+
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       
       {/* Toolbar */}
-      <div className="flex justify-between items-center bg-white/50 backdrop-blur-sm p-4 rounded-xl sticky top-4 z-10 border shadow-sm">
-        <Button variant="outline" onClick={onReset}>
+      <div className="flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-full sticky top-6 z-50 shadow-soft border border-white/50 max-w-2xl mx-auto">
+        <Button 
+          variant="ghost" 
+          onClick={onReset}
+          className="hover:bg-secondary/50 rounded-full px-6 text-muted-foreground"
+        >
           Nouveau Fichier
         </Button>
-        <Button onClick={handleDownload} className="gap-2 bg-primary hover:bg-primary/90">
-          <Download className="w-4 h-4" />
-          Télécharger PDF
+        <Button 
+          onClick={handleDownload} 
+          disabled={isGenerating}
+          className="gap-2 rounded-full px-6 shadow-none hover:opacity-90 transition-opacity text-white"
+          style={{ backgroundColor: mainColor }}
+        >
+          {isGenerating ? "Génération..." : (
+            <>
+              <Download className="w-4 h-4" />
+              Télécharger PDF
+            </>
+          )}
         </Button>
       </div>
 
       {/* Main Content to Capture */}
-      <div ref={contentRef} className="bg-slate-50 p-8 md:p-12 min-h-[1123px] w-full max-w-4xl mx-auto shadow-2xl rounded-none md:rounded-3xl text-slate-800">
-        
-        {/* Header */}
-        <header className="flex justify-between items-end border-b-2 border-slate-200 pb-8 mb-12">
-          <div>
-            <div className="text-sm font-semibold tracking-widest text-primary uppercase mb-2">République du Mali</div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-slate-900 mb-2">
-              Bulletin Qualité de l'Air
-            </h1>
-            <p className="text-slate-500 text-lg flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              Bamako, Mali
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-slate-400 uppercase tracking-wider mb-1">Date du rapport</div>
-            <div className="text-2xl font-bold font-mono text-slate-700">{data.date}</div>
-          </div>
-        </header>
+      <div className="flex justify-center">
+        <div 
+          ref={contentRef} 
+          className="bg-[#FDFCF8] p-12 md:p-16 w-full max-w-[800px] text-slate-700 relative overflow-hidden"
+        >
+          {/* Decorative Background Blobs */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/30 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none" />
 
-        {/* Hero AQI */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            Indice Global de la Ville
-          </h2>
-          
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="relative w-48 h-48 flex items-center justify-center">
-              {/* Circle Indicator */}
-              <div 
-                className="absolute inset-0 rounded-full opacity-20"
-                style={{ backgroundColor: getAQIColor(data.cityAverageAQI) }}
-              />
-              <div 
-                className="text-6xl font-bold font-display"
-                style={{ color: getAQIColor(data.cityAverageAQI) }}
-              >
-                {data.cityAverageAQI}
-              </div>
-              <div className="absolute -bottom-4 bg-white px-4 py-1 rounded-full shadow-sm border text-sm font-medium uppercase tracking-wide">
-                AQI
-              </div>
+          {/* Header */}
+          <header className="text-center mb-16 relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-slate-100 shadow-sm mb-6">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-medium tracking-widest uppercase text-slate-400">Bulletin Officiel</span>
             </div>
             
-            <div className="flex-1 text-center md:text-left">
-              <div className="text-sm text-slate-400 uppercase tracking-wider mb-2">Qualité de l'air</div>
-              <div className="text-4xl font-bold mb-4" style={{ color: getAQIColor(data.cityAverageAQI) }}>
+            <h1 className="text-5xl font-display font-medium text-slate-800 mb-4 tracking-tight">
+              Qualité de l'Air
+            </h1>
+            
+            <div className="flex items-center justify-center gap-6 text-slate-500">
+              <p className="flex items-center gap-2 text-sm uppercase tracking-wider">
+                <MapPin className="w-4 h-4" />
+                Bamako, Mali
+              </p>
+              <div className="w-px h-4 bg-slate-200" />
+              <p className="font-mono text-sm">
+                {data.date}
+              </p>
+            </div>
+          </header>
+
+          {/* Main Card */}
+          <div 
+            className="rounded-[2.5rem] p-10 mb-16 text-center relative overflow-hidden shadow-card"
+            style={{ backgroundColor: mainBg }}
+          >
+            <div className="relative z-10">
+              <h2 className="text-slate-500 mb-6 text-lg font-medium">Indice Global</h2>
+              
+              <div className="flex justify-center items-baseline gap-2 mb-4">
+                <span 
+                  className="text-8xl font-display font-bold tracking-tighter"
+                  style={{ color: mainColor }}
+                >
+                  {data.cityAverageAQI}
+                </span>
+                <span className="text-xl text-slate-400 font-medium">AQI</span>
+              </div>
+              
+              <div 
+                className="text-3xl font-display font-medium mb-6"
+                style={{ color: mainColor }}
+              >
                 {getAQILabel(data.cityAverageAQI)}
               </div>
-              <p className="text-slate-600 leading-relaxed max-w-md">
-                {data.cityAverageAQI <= 50 ? "La qualité de l'air est idéale pour les activités de plein air." :
-                 data.cityAverageAQI <= 100 ? "Qualité de l'air acceptable. Cependant, les personnes très sensibles devraient limiter les efforts prolongés." :
-                 "L'air est pollué. Il est recommandé de réduire les activités physiques intenses à l'extérieur, surtout pour les personnes sensibles."}
+              
+              <p className="text-slate-600 max-w-md mx-auto leading-relaxed text-lg font-light">
+                {data.cityAverageAQI <= 50 ? "L'air est pur et frais. Profitez de vos activités extérieures sans risque." :
+                 data.cityAverageAQI <= 100 ? "Qualité acceptable. Une légère vigilance est recommandée pour les plus sensibles." :
+                 "L'air est chargé. Privilégiez les activités calmes et limitez l'exposition extérieure."}
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Station Grid */}
-        <div className="mb-12">
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary" />
-            Détails par Station
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {data.stations.map((station, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-lg text-slate-800 truncate pr-4" title={station.name}>
-                    {station.name.replace('ML_', '').replace(/_/g, ' ')}
-                  </h3>
-                  <div 
-                    className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                    style={{ backgroundColor: getAQIColor(station.aqi) }}
-                  >
-                    AQI {station.aqi}
+          {/* Stations */}
+          <div className="mb-16 relative z-10">
+            <div className="flex items-center justify-between mb-8 px-2">
+              <h3 className="text-xl font-display text-slate-800">Données par Station</h3>
+              <Wind className="w-5 h-5 text-slate-300" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {data.stations.map((station, idx) => (
+                <div 
+                  key={idx} 
+                  className="bg-white p-6 rounded-3xl border border-slate-50 shadow-card hover:shadow-soft transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-6">
+                    <h4 className="font-medium text-slate-700 truncate pr-4 text-lg" title={station.name}>
+                      {station.name.replace('ML_', '').replace(/_/g, ' ').replace('Qualité Air', '').replace('QA', '')}
+                    </h4>
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: getSoftAQIColor(station.aqi) }}
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <PollutantRow label="NO2" value={station.maxNO2} unit="ppb" />
+                    <PollutantRow label="SO2" value={station.maxSO2} unit="ppb" />
+                    <PollutantRow label="CO" value={station.maxCO / 1000} unit="ppm" />
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                  <PollutantStat label="NO2" value={station.maxNO2} unit="ppb" />
-                  <PollutantStat label="SO2" value={station.maxSO2} unit="ppb" />
-                  <PollutantStat label="CO" value={station.maxCO / 1000} unit="ppm" />
-                </div>
-                
-                <div className="mt-4 pt-4 border-t border-slate-50 text-xs text-slate-400 flex justify-between">
-                  <span>Polluant dominant: <strong className="text-slate-600">{station.mainPollutant}</strong></span>
-                </div>
+          {/* Footer */}
+          <footer className="text-center border-t border-slate-100 pt-10">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-white rounded-full shadow-sm">
+                 <Info className="w-5 h-5 text-slate-300" />
               </div>
-            ))}
-          </div>
+            </div>
+            <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              Ce bulletin est généré automatiquement à partir des données du réseau de surveillance de Bamako. 
+              Les indices sont calculés sur la base des maxima horaires.
+            </p>
+          </footer>
+
         </div>
-
-        {/* Footer info */}
-        <footer className="bg-slate-100 rounded-2xl p-6 text-sm text-slate-500 flex items-start gap-4">
-          <Info className="w-5 h-5 shrink-0 mt-0.5 text-primary" />
-          <div>
-            <p className="mb-2">
-              <strong>Note Technique:</strong> Les indices AQI sont calculés sur la base des concentrations maximales horaires observées.
-              Les données proviennent du réseau de surveillance de la qualité de l'air de Bamako.
-            </p>
-            <p>
-              Généré automatiquement par le système de surveillance AirQuality Bamako.
-            </p>
-          </div>
-        </footer>
-
       </div>
     </div>
   );
 }
 
-function PollutantStat({ label, value, unit }: { label: string, value: number, unit: string }) {
+function PollutantRow({ label, value, unit }: { label: string, value: number, unit: string }) {
   return (
-    <div className="text-center p-2 bg-slate-50 rounded-lg">
-      <div className="text-xs font-medium text-slate-400 mb-1">{label}</div>
-      <div className="font-mono font-semibold text-slate-700">
-        {value.toFixed(1)}
-        <span className="text-[10px] text-slate-400 ml-1 font-sans">{unit}</span>
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-slate-400 font-medium">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className="font-mono font-medium text-slate-700">{value.toFixed(1)}</span>
+        <span className="text-[10px] text-slate-300">{unit}</span>
       </div>
     </div>
   );
