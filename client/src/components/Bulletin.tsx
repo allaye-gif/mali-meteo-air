@@ -50,28 +50,19 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           html, body { 
             margin: 0 !important;
             padding: 0 !important;
-            width: 210mm !important;
           }
           body > * { 
-            visibility: hidden !important; 
+            visibility: hidden !important;
           }
           #bulletin-wrapper,
           #bulletin-wrapper * {
             visibility: visible !important;
           }
-          #bulletin-wrapper {
-            width: 210mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            background: white !important;
-          }
           #bulletin-content {
-            width: 210mm !important;
-            height: auto !important;
             margin: 0 !important;
             padding: 15mm !important;
             box-sizing: border-box !important;
+            page-break-after: avoid !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
