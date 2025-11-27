@@ -51,7 +51,6 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0 !important;
             padding: 0 !important;
             width: 210mm !important;
-            height: 297mm !important;
           }
           body > * { 
             visibility: hidden !important; 
@@ -62,7 +61,6 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           }
           #bulletin-wrapper {
             width: 210mm !important;
-            height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
@@ -70,13 +68,12 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           }
           #bulletin-content {
             width: 210mm !important;
-            height: 297mm !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 15mm !important;
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            overflow: hidden !important;
           }
           * { 
             -webkit-print-color-adjust: exact !important; 
