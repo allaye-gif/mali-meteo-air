@@ -23,15 +23,16 @@ export interface DailySummary {
     avgSO2: number;
     avgCO: number;
     mainPollutant: 'NO2' | 'SO2' | 'CO';
-    aqi: number; // Simplified max index
+    aqi: number;
   }[];
   cityAverageAQI: number;
+  cityMaxAQI: number;
 }
 
-// Simplified AQI breakpoints (Generic/EPA-ish for demo purposes)
-// Using ppb for all
+// AQI Breakpoints (US EPA Standard for 1-hour where applicable or approximation)
+// Units in the CSV appear to be ppb.
 const BREAKPOINTS = {
-  NO2: [
+  NO2: [ // 1-hour NO2 (ppb)
     { max: 53, aqiMax: 50 },
     { max: 100, aqiMax: 100 },
     { max: 360, aqiMax: 150 },
@@ -39,15 +40,15 @@ const BREAKPOINTS = {
     { max: 1249, aqiMax: 300 },
     { max: 2049, aqiMax: 500 },
   ],
-  SO2: [
-    { max: 35, aqiMax: 50 },
-    { max: 75, aqiMax: 100 },
-    { max: 185, aqiMax: 150 },
-    { max: 304, aqiMax: 200 },
-    { max: 604, aqiMax: 300 },
+  SO2: [ // 1-hour SO2 (ppb)
+    { max: 75, aqiMax: 50 },
+    { max: 185, aqiMax: 100 },
+    { max: 304, aqiMax: 150 },
+    { max: 604, aqiMax: 200 },
+    { max: 804, aqiMax: 300 }, // Adjusted for 1h
     { max: 1004, aqiMax: 500 },
   ],
-  CO: [ // converted from ppm to ppb roughly (1 ppm = 1000 ppb)
+  CO: [ // 8-hour CO (ppm) converted to ppb (x1000) approx
     { max: 4400, aqiMax: 50 },
     { max: 9400, aqiMax: 100 },
     { max: 12400, aqiMax: 150 },
@@ -58,6 +59,8 @@ const BREAKPOINTS = {
 };
 
 function calculateSubIndex(conc: number, pollutant: 'NO2' | 'SO2' | 'CO'): number {
+  if (conc < 0) conc = 0; // Clamp negative values
+  
   const breakpoints = BREAKPOINTS[pollutant];
   let i = 0;
   let bpLow = 0;
@@ -70,27 +73,18 @@ function calculateSubIndex(conc: number, pollutant: 'NO2' | 'SO2' | 'CO'): numbe
       const concRange = bp.max - bpLow;
       return Math.round(((aqiRange * (conc - bpLow)) / concRange) + aqiLow);
     }
-    bpLow = bp.max + 0.01; // approximate next step
+    bpLow = bp.max + 0.01;
     aqiLow = bp.aqiMax + 1;
     i++;
   }
-  return 500; // Off chart
-}
-
-export function getAQIColor(aqi: number): string {
-  if (aqi <= 50) return "hsl(150 60% 45%)"; // Good - Green
-  if (aqi <= 100) return "hsl(45 90% 55%)"; // Moderate - Yellow
-  if (aqi <= 150) return "hsl(30 90% 60%)"; // Unhealthy for Sensitive - Orange
-  if (aqi <= 200) return "hsl(0 70% 60%)"; // Unhealthy - Red
-  if (aqi <= 300) return "hsl(280 50% 50%)"; // Very Unhealthy - Purple
-  return "hsl(300 40% 30%)"; // Hazardous - Maroon
+  return 500;
 }
 
 export function getAQILabel(aqi: number): string {
-  if (aqi <= 50) return "Excellente";
-  if (aqi <= 100) return "Moyenne";
-  if (aqi <= 150) return "Médiocre";
-  if (aqi <= 200) return "Mauvaise";
+  if (aqi <= 50) return "Bonne";
+  if (aqi <= 100) return "Modérée";
+  if (aqi <= 150) return "Médiocre"; // Unhealthy for Sensitive Groups
+  if (aqi <= 200) return "Mauvaise"; // Unhealthy
   if (aqi <= 300) return "Très Mauvaise";
   return "Dangereuse";
 }
@@ -98,33 +92,31 @@ export function getAQILabel(aqi: number): string {
 export function getHealthAdvice(aqi: number) {
   if (aqi <= 50) {
     return {
-      sport: "Idéal pour le sport",
-      windows: "Aérez vos logements",
-      general: "Profitez de l'extérieur !",
-      icon: "smile"
+      general: "La qualité de l'air est satisfaisante et ne présente que peu ou pas de risques.",
+      sensitive: "Aucune mesure particulière nécessaire."
     };
   }
   if (aqi <= 100) {
     return {
-      sport: "Activités modérées",
-      windows: "Aérez le matin",
-      general: "Qualité acceptable",
-      icon: "meh"
+      general: "La qualité de l'air est acceptable.",
+      sensitive: "Les personnes inhabituellement sensibles devraient envisager de réduire les efforts prolongés en extérieur."
     };
   }
   if (aqi <= 150) {
     return {
-      sport: "Réduisez l'intensité",
-      windows: "Limitez l'aération",
-      general: "Attention aux personnes sensibles",
-      icon: "frown"
+      general: "Le grand public n'est probablement pas affecté.",
+      sensitive: "Les personnes sensibles (enfants, asthmatiques) doivent réduire les exercices intenses en plein air."
+    };
+  }
+  if (aqi <= 200) {
+    return {
+      general: "Tout le monde peut commencer à ressentir des effets sur la santé.",
+      sensitive: "Évitez toute activité physique intense en extérieur."
     };
   }
   return {
-    sport: "Évitez le sport",
-    windows: "Gardez fenêtres fermées",
-    general: "Portez un masque si nécessaire",
-    icon: "alert"
+    general: "Alerte sanitaire : risque d'effets graves pour tous.",
+    sensitive: "Restez à l'intérieur et évitez toute activité physique."
   };
 }
 
@@ -132,7 +124,7 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
-      dynamicTyping: true, // tries to convert numbers
+      dynamicTyping: true,
       skipEmptyLines: true,
       complete: (results) => {
         try {
@@ -143,10 +135,6 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             return;
           }
 
-          // Map columns to cleaner structure
-          // The CSV headers are complex like "NO2 quantity[ppb] (ML_BKO_Qualité_Air_1)"
-          // We need to extract station names and pollutant types.
-          
           const stationsMap = new Map<string, {
             no2: number[];
             so2: number[];
@@ -154,9 +142,6 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
           }>();
 
           const headers = Object.keys(data[0]);
-          
-          // Identify stations
-          // Regex to find station name inside parentheses
           const stationRegex = /\((.*?)\)/;
 
           data.forEach(row => {
@@ -166,11 +151,18 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
               const match = header.match(stationRegex);
               if (match) {
                 const stationName = match[1];
-                const value = row[header];
+                let value = row[header];
                 
-                // Handle parsing issues (sometimes "Empty" or strings in CSV)
-                const numValue = typeof value === 'number' ? value : parseFloat(value);
-                if (isNaN(numValue)) return;
+                // Clean Data: Handle strings, empty, or negative values
+                if (typeof value === 'string') {
+                  value = parseFloat(value);
+                }
+                
+                // Skip NaNs
+                if (isNaN(value)) return;
+
+                // Clamp negative sensor readings to 0 for calculations
+                if (value < 0) value = 0;
 
                 if (!stationsMap.has(stationName)) {
                   stationsMap.set(stationName, { no2: [], so2: [], co: [] });
@@ -178,29 +170,32 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
                 
                 const stationData = stationsMap.get(stationName)!;
 
-                if (header.includes("NO2")) stationData.no2.push(numValue);
-                else if (header.includes("SO2")) stationData.so2.push(numValue);
-                else if (header.includes("CO")) stationData.co.push(numValue);
+                if (header.includes("NO2")) stationData.no2.push(value);
+                else if (header.includes("SO2")) stationData.so2.push(value);
+                else if (header.includes("CO")) stationData.co.push(value);
               }
             });
           });
 
-          // Calculate daily stats
           const stationSummaries = Array.from(stationsMap.entries()).map(([name, values]) => {
-            const maxNO2 = Math.max(...values.no2, 0);
-            const maxSO2 = Math.max(...values.so2, 0);
-            const maxCO = Math.max(...values.co, 0);
+            // Calculation Rule: 
+            // For "Bulletin Quotidien", we often look at the worst hour (Max) or the daily average.
+            // To be safe/conservative for public health, we use the MAX hourly value observed.
+            
+            const maxNO2 = values.no2.length ? Math.max(...values.no2) : 0;
+            const maxSO2 = values.so2.length ? Math.max(...values.so2) : 0;
+            const maxCO = values.co.length ? Math.max(...values.co) : 0;
 
-            const avgNO2 = values.no2.reduce((a,b)=>a+b,0) / (values.no2.length || 1);
-            const avgSO2 = values.so2.reduce((a,b)=>a+b,0) / (values.so2.length || 1);
-            const avgCO = values.co.reduce((a,b)=>a+b,0) / (values.co.length || 1);
+            const avgNO2 = values.no2.length ? values.no2.reduce((a,b)=>a+b,0)/values.no2.length : 0;
+            const avgSO2 = values.so2.length ? values.so2.reduce((a,b)=>a+b,0)/values.so2.length : 0;
+            const avgCO = values.co.length ? values.co.reduce((a,b)=>a+b,0)/values.co.length : 0;
 
-            // Calculate AQI based on MAX values (standard practice is max hourly or 8hr avg, using max hourly for simplified prototype)
             const aqiNO2 = calculateSubIndex(maxNO2, 'NO2');
             const aqiSO2 = calculateSubIndex(maxSO2, 'SO2');
             const aqiCO = calculateSubIndex(maxCO, 'CO');
 
             const aqi = Math.max(aqiNO2, aqiSO2, aqiCO);
+            
             let mainPollutant: 'NO2' | 'SO2' | 'CO' = 'NO2';
             if (aqiSO2 >= aqiNO2 && aqiSO2 >= aqiCO) mainPollutant = 'SO2';
             if (aqiCO >= aqiNO2 && aqiCO >= aqiSO2) mainPollutant = 'CO';
@@ -214,17 +209,21 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             };
           });
 
+          // City average AQI (Average of station AQIs)
           const cityAvgAQI = Math.round(
             stationSummaries.reduce((acc, s) => acc + s.aqi, 0) / (stationSummaries.length || 1)
           );
+
+          // City Max AQI (Worst station)
+          const cityMaxAQI = Math.max(...stationSummaries.map(s => s.aqi));
           
-          // Get date from first row
           const dateStr = data[0].date ? data[0].date.split(' ')[0] : new Date().toLocaleDateString();
 
           resolve({
             date: dateStr,
             stations: stationSummaries,
-            cityAverageAQI: cityAvgAQI
+            cityAverageAQI: cityAvgAQI,
+            cityMaxAQI
           });
 
         } catch (err) {

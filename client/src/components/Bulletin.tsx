@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { DailySummary, getAQILabel, getHealthAdvice } from '@/lib/air-quality';
-import { Download, Calendar, MapPin, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Download, Printer, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -10,15 +10,22 @@ interface BulletinProps {
   onReset: () => void;
 }
 
-// Official colors for the bulletin
 const COLORS = {
-  primary: '#0056b3', // Official Blue
-  secondary: '#f0f7ff', // Light Blue Bg
-  text: '#333333',
-  border: '#e2e8f0',
-  success: '#22c55e',
-  warning: '#eab308',
-  danger: '#ef4444',
+  good: '#4ade80',     // Green
+  moderate: '#facc15', // Yellow
+  unhealthySens: '#fb923c', // Orange
+  unhealthy: '#f87171', // Red
+  veryUnhealthy: '#a855f7', // Purple
+  hazardous: '#be123c', // Maroon
+};
+
+const getStatusColor = (aqi: number) => {
+  if (aqi <= 50) return COLORS.good;
+  if (aqi <= 100) return COLORS.moderate;
+  if (aqi <= 150) return COLORS.unhealthySens;
+  if (aqi <= 200) return COLORS.unhealthy;
+  if (aqi <= 300) return COLORS.veryUnhealthy;
+  return COLORS.hazardous;
 };
 
 export function Bulletin({ data, onReset }: BulletinProps) {
@@ -31,207 +38,194 @@ export function Bulletin({ data, onReset }: BulletinProps) {
     
     try {
       // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
+      // Use html2canvas with specific settings for reliability
       const canvas = await html2canvas(contentRef.current, {
-        scale: 2, // High quality
-        backgroundColor: '#ffffff',
-        logging: false,
+        scale: 2, // High resolution
         useCORS: true,
+        logging: true,
+        backgroundColor: '#ffffff', // Ensure white background
+        width: 794, // Exact A4 width in px at 96dpi
+        height: 1123, // Exact A4 height in px at 96dpi
+        windowWidth: 1200, // Ensure context is large enough
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       
-      // A4 dimensions in mm
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`Bulletin_Mali_Meteo_${data.date.replace(/\//g, '-')}.pdf`);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Bulletin_MALI_METEO_${data.date.replace(/\//g, '-')}.pdf`);
       
     } catch (err) {
       console.error("PDF Error", err);
-      alert("Erreur de téléchargement. Veuillez réessayer.");
+      alert("Erreur lors de la création du PDF. Veuillez utiliser la fonction d'impression du navigateur (Ctrl+P) si le problème persiste.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Determine status color
-  const getStatusColor = (aqi: number) => {
-    if (aqi <= 50) return COLORS.success;
-    if (aqi <= 100) return COLORS.warning;
-    return COLORS.danger;
+  const handlePrint = () => {
+    window.print();
   };
 
+  const advice = getHealthAdvice(data.cityMaxAQI);
+
   return (
-    <div className="flex flex-col items-center pb-20 animate-in fade-in duration-500">
+    <div className="flex flex-col items-center pb-20 bg-slate-100 min-h-screen pt-10">
       
-      {/* Toolbar */}
-      <div className="flex gap-4 mb-8 sticky top-4 z-50 bg-white/90 backdrop-blur p-2 rounded-lg shadow-sm border">
-        <Button variant="outline" onClick={onReset}>
-          Nouveau fichier
+      {/* Toolbar - No Print */}
+      <div className="flex gap-4 mb-8 sticky top-4 z-50 bg-white/90 backdrop-blur p-3 rounded-full shadow-lg border print:hidden">
+        <Button variant="outline" onClick={onReset} className="rounded-full">
+          Nouveau
         </Button>
-        <Button onClick={handleDownload} disabled={isGenerating} className="bg-blue-700 hover:bg-blue-800 text-white">
+        <Button variant="outline" onClick={handlePrint} className="rounded-full gap-2">
+          <Printer className="w-4 h-4" />
+          Imprimer
+        </Button>
+        <Button 
+          onClick={handleDownload} 
+          disabled={isGenerating} 
+          className="bg-blue-900 hover:bg-blue-800 text-white rounded-full gap-2"
+        >
+          <Download className="w-4 h-4" />
           {isGenerating ? "Génération..." : "Télécharger PDF"}
         </Button>
       </div>
 
-      {/* A4 Document Container */}
-      <div className="shadow-2xl overflow-hidden bg-white">
+      {/* A4 Document Container - Exactly 210mm x 297mm */}
+      <div className="shadow-2xl print:shadow-none print:w-full print:h-full overflow-hidden bg-white">
         <div 
           ref={contentRef}
-          className="w-[210mm] h-[297mm] bg-white relative text-slate-800 flex flex-col"
-          style={{ padding: '15mm' }} // Standard margins
+          className="w-[210mm] h-[297mm] bg-white relative text-slate-800 flex flex-col p-[15mm] box-border"
+          id="bulletin-content"
         >
-          {/* 1. Official Header */}
-          <header className="border-b-4 border-blue-800 pb-6 mb-8 flex justify-between items-start">
-            <div className="w-1/3 text-center space-y-1">
-              <div className="font-bold text-xs uppercase tracking-widest text-slate-500">République du Mali</div>
-              <div className="text-[10px] italic font-serif text-slate-400">Un Peuple - Un But - Une Foi</div>
-              
-              {/* Logo Placeholder */}
-              <div className="mt-4 flex justify-center">
-                <div className="w-16 h-16 bg-blue-800 text-white rounded-full flex items-center justify-center font-bold text-xs text-center leading-tight">
-                  MALI<br/>MÉTÉO
-                </div>
-              </div>
+          {/* HEADER */}
+          <header className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
+            <div className="w-1/4 flex flex-col items-center justify-center">
+               {/* Logo MALI METEO Simulation */}
+               <div className="w-20 h-20 bg-blue-900 rounded-full flex flex-col items-center justify-center text-white mb-2">
+                  <span className="text-[8px] uppercase tracking-wider">Agence</span>
+                  <span className="font-bold text-lg leading-none">MALI</span>
+                  <span className="font-bold text-lg leading-none">MÉTÉO</span>
+               </div>
+            </div>
+            
+            <div className="w-2/4 text-center pt-2">
+              <h2 className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-1">République du Mali</h2>
+              <h3 className="text-[10px] italic text-slate-400 mb-4">Un Peuple - Un But - Une Foi</h3>
+              <h1 className="text-3xl font-bold text-blue-900 uppercase font-serif">Bulletin Qualité de l'Air</h1>
+              <div className="text-sm font-medium text-blue-600 uppercase tracking-wide mt-1">Zone de Bamako</div>
             </div>
 
-            <div className="w-1/3 text-center pt-4">
-              <h1 className="font-bold text-2xl text-blue-900 uppercase leading-tight mb-2">
-                Bulletin Qualité<br/>de l'Air
-              </h1>
-              <div className="inline-block bg-blue-50 text-blue-800 px-3 py-1 rounded text-sm font-medium border border-blue-100">
-                Bamako et Environs
+            <div className="w-1/4 text-right pt-2">
+              <div className="border border-blue-900 p-2 inline-block text-center min-w-[100px]">
+                <div className="text-[10px] uppercase text-slate-500">Date</div>
+                <div className="font-bold text-lg text-blue-900">{data.date}</div>
               </div>
-            </div>
-
-            <div className="w-1/3 text-right space-y-2 pt-2">
-              <div className="text-xs text-slate-500 uppercase">Date d'émission</div>
-              <div className="font-mono font-bold text-lg border-2 border-slate-800 px-2 py-1 inline-block bg-slate-50">
-                {data.date}
-              </div>
-              <div className="text-[10px] text-slate-400">N° {new Date().getFullYear()}-{Math.floor(Math.random() * 1000)}</div>
             </div>
           </header>
 
-          {/* 2. Executive Summary */}
-          <section className="mb-8 bg-slate-50 border border-slate-200 p-6 rounded-lg">
-            <h2 className="text-sm font-bold text-blue-900 uppercase mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <Info className="w-4 h-4" />
-              Situation Globale
-            </h2>
-            
-            <div className="flex items-center gap-8">
-              {/* Big Indicator */}
-              <div className="flex-shrink-0 text-center">
+          {/* GLOBAL SITUATION */}
+          <section className="mb-8">
+            <div className="flex items-stretch bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
+              {/* Left: Indicator */}
+              <div className="w-1/3 p-6 flex flex-col items-center justify-center border-r border-slate-200 bg-white">
+                <div className="text-sm font-bold text-slate-500 uppercase mb-2">Indice Global (AQI)</div>
                 <div 
-                  className="w-24 h-24 rounded-full border-4 flex items-center justify-center text-3xl font-bold mb-2"
-                  style={{ 
-                    borderColor: getStatusColor(data.cityAverageAQI),
-                    color: getStatusColor(data.cityAverageAQI),
-                    backgroundColor: 'white'
-                  }}
+                  className="w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-md mb-2"
+                  style={{ backgroundColor: getStatusColor(data.cityMaxAQI) }}
                 >
-                  {data.cityAverageAQI}
+                  {data.cityMaxAQI}
                 </div>
-                <div className="text-xs font-bold uppercase text-slate-500">Indice Ville</div>
+                <div className="font-bold text-lg" style={{ color: getStatusColor(data.cityMaxAQI) }}>
+                  {getAQILabel(data.cityMaxAQI)}
+                </div>
               </div>
 
-              <div className="flex-1">
-                <div className="text-lg font-bold mb-1" style={{ color: getStatusColor(data.cityAverageAQI) }}>
-                  Qualité de l'air : {getAQILabel(data.cityAverageAQI)}
-                </div>
-                <p className="text-sm text-slate-600 text-justify leading-relaxed">
-                  L'indice global de la qualité de l'air pour la ville de Bamako est aujourd'hui de <strong>{data.cityAverageAQI}</strong>.
-                  {data.cityAverageAQI <= 50 ? " Les conditions sont favorables pour toutes les activités." :
-                   data.cityAverageAQI <= 100 ? " La qualité de l'air est acceptable. Une vigilance mineure est recommandée." :
-                   " La qualité de l'air est dégradée. Il est conseillé de suivre les recommandations sanitaires ci-dessous."}
+              {/* Right: Text */}
+              <div className="w-2/3 p-6 flex flex-col justify-center">
+                <h3 className="font-bold text-blue-900 uppercase mb-2 text-sm">Synthèse de la journée</h3>
+                <p className="text-sm text-slate-700 text-justify leading-relaxed">
+                  L'indice de qualité de l'air (AQI) retenu pour la journée est de <strong>{data.cityMaxAQI}</strong>, correspondant à une qualité <strong>{getAQILabel(data.cityMaxAQI).toLowerCase()}</strong>.
+                  Cet indice est calculé sur la base de la station enregistrant la concentration maximale de polluants.
+                  <br/><br/>
+                  Polluant majoritaire : <strong>{data.stations.find(s => s.aqi === data.cityMaxAQI)?.mainPollutant || "Mixte"}</strong>.
                 </p>
               </div>
             </div>
           </section>
 
-          {/* 3. Stations Table */}
-          <section className="mb-8 flex-1">
-            <h2 className="text-sm font-bold text-blue-900 uppercase mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <MapPin className="w-4 h-4" />
-              Relevés par Station de Surveillance
-            </h2>
-
-            <table className="w-full text-sm border-collapse">
+          {/* STATIONS DATA */}
+          <section className="mb-8 flex-grow">
+            <h3 className="font-bold text-blue-900 uppercase mb-3 text-sm border-b border-slate-200 pb-1">
+              Détails du Réseau de Surveillance
+            </h3>
+            <table className="w-full text-sm border-collapse border border-slate-200">
               <thead>
-                <tr className="bg-blue-800 text-white">
-                  <th className="p-3 text-left w-1/3">Station</th>
-                  <th className="p-3 text-center">Polluant Dominant</th>
-                  <th className="p-3 text-center">Indice (AQI)</th>
-                  <th className="p-3 text-center">Niveau</th>
+                <tr className="bg-blue-50 text-blue-900">
+                  <th className="border border-slate-200 p-3 text-left w-1/3">Station</th>
+                  <th className="border border-slate-200 p-3 text-center">NO2 (max)</th>
+                  <th className="border border-slate-200 p-3 text-center">SO2 (max)</th>
+                  <th className="border border-slate-200 p-3 text-center">CO (max)</th>
+                  <th className="border border-slate-200 p-3 text-center bg-slate-100 font-bold">AQI</th>
                 </tr>
               </thead>
               <tbody>
-                {data.stations.map((station, idx) => (
-                  <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50">
-                    <td className="p-3 font-medium text-slate-700">
-                      {station.name.replace('ML_', '').replace(/_/g, ' ').replace('QA', '')}
+                {data.stations.map((s, i) => (
+                  <tr key={i} className="text-slate-700">
+                    <td className="border border-slate-200 p-3 font-medium">
+                      {s.name.replace('ML_', '').replace(/_/g, ' ').replace('Qualité Air', '').replace('QA', '')}
                     </td>
-                    <td className="p-3 text-center font-mono text-xs text-slate-500">
-                      {station.mainPollutant}
-                    </td>
-                    <td className="p-3 text-center font-bold text-slate-800">
-                      {station.aqi}
-                    </td>
-                    <td className="p-3 text-center">
-                      <span 
-                        className="inline-block px-2 py-1 rounded text-[10px] font-bold text-white uppercase min-w-[80px]"
-                        style={{ backgroundColor: getStatusColor(station.aqi) }}
-                      >
-                        {getAQILabel(station.aqi)}
-                      </span>
+                    <td className="border border-slate-200 p-3 text-center">{s.maxNO2.toFixed(0)}</td>
+                    <td className="border border-slate-200 p-3 text-center">{s.maxSO2.toFixed(0)}</td>
+                    <td className="border border-slate-200 p-3 text-center">{s.maxCO.toFixed(0)}</td>
+                    <td className="border border-slate-200 p-3 text-center font-bold relative">
+                      <div 
+                        className="absolute inset-1 opacity-20 rounded" 
+                        style={{ backgroundColor: getStatusColor(s.aqi) }} 
+                      />
+                      <span className="relative z-10">{s.aqi}</span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="text-[10px] text-slate-400 mt-2 italic text-right">
+              * Concentrations en ppb. NO2 (Dioxyde d'azote), SO2 (Dioxyde de soufre), CO (Monoxyde de carbone).
+            </div>
           </section>
 
-          {/* 4. Recommendations */}
-          <section className="mb-8">
-             <h2 className="text-sm font-bold text-blue-900 uppercase mb-4 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <AlertTriangle className="w-4 h-4" />
-              Recommandations Sanitaires
-            </h2>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white border border-l-4 border-slate-200 border-l-blue-600 p-4 rounded shadow-sm">
-                <h3 className="font-bold text-xs uppercase text-blue-800 mb-2">Population Générale</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                   {data.cityAverageAQI > 100 ? "Réduisez les activités physiques intenses en extérieur." : "Aucune restriction particulière. Aérez vos locaux."}
-                </p>
+          {/* HEALTH ADVICE */}
+          <section className="mb-8 bg-blue-50 border border-blue-100 p-5 rounded-lg">
+            <h3 className="font-bold text-blue-900 uppercase mb-3 text-sm flex items-center gap-2">
+              <Info className="w-4 h-4" />
+              Avis de Santé Publique
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <span className="font-bold text-xs uppercase text-blue-800 block mb-1">Population Générale</span>
+                <p className="text-sm text-slate-700">{advice.general}</p>
               </div>
-              <div className="bg-white border border-l-4 border-slate-200 border-l-red-500 p-4 rounded shadow-sm">
-                <h3 className="font-bold text-xs uppercase text-red-700 mb-2">Personnes Sensibles</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                   {data.cityAverageAQI > 100 ? "Évitez les sorties aux heures de pointe. Consultez un médecin en cas de gêne." : "Surveillez l'apparition de symptômes respiratoires éventuels."}
-                </p>
+              <div className="border-t border-blue-200 pt-3">
+                <span className="font-bold text-xs uppercase text-blue-800 block mb-1">Personnes Vulnérables</span>
+                <p className="text-sm text-slate-700">{advice.sensitive}</p>
               </div>
             </div>
           </section>
 
-          {/* 5. Footer */}
-          <footer className="mt-auto pt-6 border-t-2 border-slate-800 text-center">
-            <div className="flex justify-center gap-8 mb-4 text-xs font-bold text-blue-900 uppercase">
-              <span>Agence Nationale de la Météorologie</span>
-              <span>•</span>
-              <span>Direction Technique</span>
-              <span>•</span>
-              <span>Département Environnement</span>
-            </div>
-            <p className="text-[10px] text-slate-400 max-w-lg mx-auto">
-              Bulletin généré automatiquement par le système de gestion de la qualité de l'air (AQMS).
-              Les données sont provisoires et sujettes à validation finale.
-              <br/>BP: 1234 Bamako - Mali | Tél: +223 20 20 20 20 | Email: contact@malimeteo.ml
+          {/* FOOTER */}
+          <footer className="mt-auto pt-6 border-t-2 border-blue-900 text-center">
+            <p className="font-bold text-blue-900 text-xs uppercase mb-1">Agence Nationale de la Météorologie (MALI MÉTÉO)</p>
+            <p className="text-[10px] text-slate-500">
+              Siège Social : Bamako, Mali • Tél : (+223) 20 20 20 20 • Site Web : www.malimeteo.ml
+            </p>
+            <p className="text-[8px] text-slate-400 mt-2">
+              Document généré automatiquement le {new Date().toLocaleDateString()} à {new Date().toLocaleTimeString()}. 
+              Ce bulletin est un document d'information provisoire.
             </p>
           </footer>
 
