@@ -50,43 +50,27 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           html, body { 
             margin: 0 !important;
             padding: 0 !important;
+            width: 210mm !important;
           }
-          .no-print { 
+          .no-print,
+          [data-sonner-toaster],
+          [data-sonner-toast],
+          .sonner-toaster {
             display: none !important; 
           }
           #bulletin-wrapper {
+            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
           }
           #bulletin-content {
             width: 210mm !important;
-            height: 297mm !important;
             margin: 0 !important;
-            padding: 12mm !important;
+            padding: 15mm !important;
             box-sizing: border-box !important;
-            overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            display: flex !important;
-            flex-direction: column !important;
-          }
-          #bulletin-content > * {
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          header {
-            margin-bottom: 4mm !important;
-          }
-          section {
-            margin-bottom: 3mm !important;
-          }
-          section:last-of-type {
-            margin-bottom: 0 !important;
-            flex-grow: 1 !important;
-          }
-          table {
-            font-size: 9px !important;
           }
           * { 
             -webkit-print-color-adjust: exact !important; 
