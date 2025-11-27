@@ -51,7 +51,10 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0 !important;
             padding: 0 !important;
           }
-          .no-print { 
+          .no-print,
+          [data-sonner-toaster],
+          [role="status"],
+          [role="alert"] { 
             display: none !important;
           }
           #bulletin-wrapper {
