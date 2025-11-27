@@ -43,54 +43,37 @@ export function Bulletin({ data, onReset }: BulletinProps) {
     <div className="flex flex-col items-center bg-slate-100 min-h-screen">
       <style>{`
         @media print {
-          * { 
-            margin: 0 !important;
-            padding: 0 !important;
-          }
           @page { 
             size: A4; 
             margin: 0; 
           }
           html, body { 
-            width: 210mm !important;
-            height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
           }
-          body > * { 
+          .no-print { 
             display: none !important;
           }
           #bulletin-wrapper {
-            display: block !important;
             width: 210mm !important;
-            height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
-            overflow: hidden !important;
             page-break-after: avoid !important;
-            visibility: visible !important;
           }
           #bulletin-content {
-            width: 210mm !important;
-            height: 297mm !important;
+            width: 100% !important;
             margin: 0 !important;
-            padding: 8mm !important;
+            padding: 7mm !important;
             box-sizing: border-box !important;
-            overflow: hidden !important;
-            display: flex !important;
-            flex-direction: column !important;
             page-break-after: avoid !important;
             page-break-inside: avoid !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            position: relative !important;
           }
-          #bulletin-content * {
-            page-break-inside: avoid !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+          * { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
           }
         }
       `}</style>
@@ -111,7 +94,8 @@ export function Bulletin({ data, onReset }: BulletinProps) {
         <div 
           ref={contentRef}
           id="bulletin-content"
-          className="w-[210mm] min-h-[297mm] bg-white relative text-slate-800 flex flex-col p-[12mm] box-border"
+          className="bg-white relative text-slate-800 flex flex-col p-[10mm] box-border"
+          style={{ width: '210mm', minHeight: '297mm' }}
         >
           {/* HEADER */}
           <header className="flex justify-between items-start border-b-2 border-blue-900 pb-4 mb-6">
