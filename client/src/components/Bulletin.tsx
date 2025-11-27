@@ -53,6 +53,7 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             background: white !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 210mm !important;
           }
           /* Hide everything initially */
           body * {
@@ -62,18 +63,16 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           #bulletin-content, #bulletin-content * {
             visibility: visible;
           }
-          /* Position bulletin at absolute top-left */
+          /* Position bulletin correctly */
           #bulletin-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm !important;
-            min-height: 297mm !important;
+            width: 100% !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 15mm !important;
             box-shadow: none !important;
             background: white !important;
-            z-index: 9999;
+            box-sizing: border-box !important;
+            page-break-after: avoid !important;
           }
           .no-print { display: none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
