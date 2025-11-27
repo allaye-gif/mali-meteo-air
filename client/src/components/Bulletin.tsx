@@ -54,6 +54,9 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0 !important;
             padding: 0 !important;
             width: 210mm !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
           }
           /* Hide everything initially */
           body * {
@@ -63,20 +66,34 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           #bulletin-content, #bulletin-content * {
             visibility: visible;
           }
-          /* Position bulletin correctly */
+          /* Position bulletin correctly - NO OFFSET */
           #bulletin-content {
-            width: 100% !important;
+            width: 210mm !important;
             height: auto !important;
             margin: 0 !important;
             padding: 15mm !important;
             box-shadow: none !important;
             background: white !important;
             box-sizing: border-box !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
             page-break-after: avoid !important;
           }
           .no-print { display: none !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          * { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          #bulletin-content * {
+            margin: revert !important;
+            padding: revert !important;
+          }
         }
+      `}
       `}</style>
       
       {/* Toolbar */}
