@@ -50,8 +50,6 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           html, body { 
             margin: 0 !important;
             padding: 0 !important;
-            width: 210mm !important;
-            overflow-x: hidden !important;
           }
           body > * { 
             visibility: hidden !important;
@@ -61,24 +59,21 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             visibility: visible !important;
           }
           #bulletin-wrapper {
-            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
-            overflow: hidden !important;
           }
           #bulletin-content {
-            width: 210mm !important;
+            width: auto !important;
+            max-width: none !important;
             margin: 0 !important;
-            padding: 12mm !important;
+            padding: 15mm !important;
             box-sizing: border-box !important;
             page-break-after: avoid !important;
-            overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
           * { 
-            max-width: 100% !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important; 
           }
