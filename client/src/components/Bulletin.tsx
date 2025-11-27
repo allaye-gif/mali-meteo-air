@@ -51,26 +51,32 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0 !important;
             padding: 0 !important;
             width: 210mm !important;
+            height: 297mm !important;
           }
-          .no-print,
-          [data-sonner-toaster],
-          [data-sonner-toast],
-          .sonner-toaster {
-            display: none !important; 
+          body > * { 
+            visibility: hidden !important; 
+          }
+          #bulletin-wrapper,
+          #bulletin-wrapper * {
+            visibility: visible !important;
           }
           #bulletin-wrapper {
             width: 210mm !important;
+            height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
+            background: white !important;
           }
           #bulletin-content {
             width: 210mm !important;
+            height: 297mm !important;
             margin: 0 !important;
             padding: 15mm !important;
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            overflow: hidden !important;
           }
           * { 
             -webkit-print-color-adjust: exact !important; 
