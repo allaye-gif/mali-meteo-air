@@ -51,16 +51,15 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
-            height: 100% !important;
           }
           body > * { 
-            display: none !important; 
+            visibility: hidden !important; 
           }
-          .no-print { 
-            display: none !important; 
+          #bulletin-wrapper,
+          #bulletin-wrapper * {
+            visibility: visible !important;
           }
           #bulletin-wrapper {
-            display: block !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
