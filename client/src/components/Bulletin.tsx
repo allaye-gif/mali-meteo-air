@@ -59,19 +59,25 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             visibility: visible !important;
           }
           #bulletin-wrapper {
+            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
             box-shadow: none !important;
+            overflow: hidden !important;
           }
           #bulletin-content {
-            width: auto !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 15mm !important;
+            width: 100% !important;
             box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 10mm !important;
             page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+            overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+          }
+          #bulletin-content * {
+            page-break-inside: avoid !important;
           }
           * { 
             -webkit-print-color-adjust: exact !important; 
