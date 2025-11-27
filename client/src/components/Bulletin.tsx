@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { DailySummary, getAQILabel, getHealthAdvice } from '@/lib/air-quality';
 import { Printer, Activity, AlertTriangle, Info, ThermometerSun, Wind, Leaf, Bike, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import logoMaliMeteo from '@assets/Logo_Mali_Meteo_1764230835252.png';
+import logoMaliMeteo from '@assets/generated_images/mali_météo_agency_logo.png';
 
 interface BulletinProps {
   data: DailySummary;
