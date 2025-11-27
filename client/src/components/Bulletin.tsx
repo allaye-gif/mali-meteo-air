@@ -48,15 +48,25 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             margin: 0; 
           }
           html, body { 
-            height: auto !important;
-            overflow: visible !important;
-            background: white !important;
             margin: 0 !important;
             padding: 0 !important;
             width: 100% !important;
+            height: 100% !important;
+          }
+          body > * { 
+            display: none !important; 
           }
           .no-print { 
             display: none !important; 
+          }
+          #bulletin-wrapper {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: white !important;
+            width: 100% !important;
+            height: auto !important;
           }
           #bulletin-content {
             width: 100% !important;
@@ -66,7 +76,6 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             box-shadow: none !important;
             background: white !important;
             box-sizing: border-box !important;
-            page-break-after: avoid !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -89,8 +98,7 @@ export function Bulletin({ data, onReset }: BulletinProps) {
       </div>
 
       {/* A4 Document Container */}
-      {/* No Wrapper ID needed for this visibility technique, just the content ID */}
-      <div className="shadow-2xl mb-20 bg-white">
+      <div id="bulletin-wrapper" className="shadow-2xl mb-20 bg-white">
         <div 
           ref={contentRef}
           id="bulletin-content"
