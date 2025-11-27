@@ -50,30 +50,15 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           html, body { 
             margin: 0 !important;
             padding: 0 !important;
-            width: 100% !important;
           }
-          body > * { 
-            visibility: hidden !important; 
-          }
-          #bulletin-wrapper,
-          #bulletin-wrapper * {
-            visibility: visible !important;
-          }
-          #bulletin-wrapper {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            background: white !important;
-            width: 100% !important;
-            height: auto !important;
+          .no-print { 
+            display: none !important; 
           }
           #bulletin-content {
             width: 100% !important;
             height: auto !important;
             margin: 0 !important;
             padding: 15mm !important;
-            box-shadow: none !important;
-            background: white !important;
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
