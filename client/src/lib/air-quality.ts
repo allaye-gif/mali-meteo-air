@@ -87,12 +87,45 @@ export function getAQIColor(aqi: number): string {
 }
 
 export function getAQILabel(aqi: number): string {
-  if (aqi <= 50) return "Bonne";
-  if (aqi <= 100) return "Modérée";
-  if (aqi <= 150) return "Mauvaise pour les sensibles";
+  if (aqi <= 50) return "Excellente";
+  if (aqi <= 100) return "Moyenne";
+  if (aqi <= 150) return "Médiocre";
   if (aqi <= 200) return "Mauvaise";
   if (aqi <= 300) return "Très Mauvaise";
   return "Dangereuse";
+}
+
+export function getHealthAdvice(aqi: number) {
+  if (aqi <= 50) {
+    return {
+      sport: "Idéal pour le sport",
+      windows: "Aérez vos logements",
+      general: "Profitez de l'extérieur !",
+      icon: "smile"
+    };
+  }
+  if (aqi <= 100) {
+    return {
+      sport: "Activités modérées",
+      windows: "Aérez le matin",
+      general: "Qualité acceptable",
+      icon: "meh"
+    };
+  }
+  if (aqi <= 150) {
+    return {
+      sport: "Réduisez l'intensité",
+      windows: "Limitez l'aération",
+      general: "Attention aux personnes sensibles",
+      icon: "frown"
+    };
+  }
+  return {
+    sport: "Évitez le sport",
+    windows: "Gardez fenêtres fermées",
+    general: "Portez un masque si nécessaire",
+    icon: "alert"
+  };
 }
 
 export const parseCSV = (file: File): Promise<DailySummary | null> => {
