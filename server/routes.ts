@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import puppeteer from "puppeteer";
+import { execSync } from "child_process";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -11,18 +12,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let browser = null;
     try {
       console.log("Launching Puppeteer...");
-      // Launch browser - TRYING SYSTEM CHROMIUM PATH
-      // On Nix/Replit, chromium is usually in the path or typical locations
       
-      const executablePath = process.env.CHROMIUM_PATH || 'chromium';
+      // Dynamically find chromium path
+      let executablePath = "";
+      try {
+        executablePath = execSync("which chromium").toString().trim();
+        console.log(`Found chromium at: ${executablePath}`);
+      } catch (e) {
+        console.error("Could not find chromium in PATH");
+        // Fallback or let Puppeteer try its default (which likely fails if not installed)
+        throw new Error("Chromium not found in system PATH");
+      }
 
       browser = await puppeteer.launch({
         headless: true,
-        executablePath, // Use system installed chromium
+        executablePath: executablePath, 
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage', // Important for container environments
+            '--disable-dev-shm-usage',
             '--disable-gpu'
         ]
       });
