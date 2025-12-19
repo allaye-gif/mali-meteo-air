@@ -45,50 +45,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await page.goto("https://app.pulsonic.com/login", { waitUntil: 'networkidle2' });
 
       // 2. Fill Credentials
-      // Selectors based on screenshots: "E-mail" and "Mot de passe"
-      // We'll try generic input selectors if IDs aren't known, or look for placeholder/name
-      
       console.log("Filling credentials...");
       
       // Wait for inputs
       await page.waitForSelector('input');
       
-      // Strategy: Find input by type or name
-      // Usually first input is username, second is password
+      // Try to identify inputs more robustly
+      // We look for inputs that are visible
       const inputs = await page.$$('input');
       
-      if (inputs.length >= 2) {
-         await inputs[0].type("Prevision");
-         await inputs[1].type("Meteo2024");
-      } else {
-         throw new Error("Could not find login inputs");
+      let userFilled = false;
+      let passFilled = false;
+
+      for (const input of inputs) {
+          const type = await page.evaluate(el => el.getAttribute('type'), input);
+          const name = await page.evaluate(el => el.getAttribute('name'), input);
+          const placeholder = await page.evaluate(el => el.getAttribute('placeholder'), input);
+          const isHidden = await page.evaluate(el => {
+              const style = window.getComputedStyle(el);
+              return style.display === 'none' || style.visibility === 'hidden' || el.offsetParent === null;
+          }, input);
+
+          if (isHidden) continue;
+
+          console.log(`Found visible input: type=${type} name=${name} placeholder=${placeholder}`);
+
+          if (!userFilled && (type === 'text' || type === 'email' || !type)) {
+              await input.type("Prevision");
+              userFilled = true;
+          } else if (!passFilled && type === 'password') {
+              await input.type("Meteo2024");
+              passFilled = true;
+          }
       }
 
-      // 3. Click Login
-      console.log("Clicking Login...");
-      // Look for button with text "SE CONNECTER" or submit button
-      const loginButton = await page.$('button[type="submit"]') || 
-                          (await page.$x("//button[contains(., 'CONNECTER')]"))[0] ||
-                          (await page.$x("//button[contains(., 'Connecter')]"))[0];
-                          
-      if (loginButton) {
-          // Type casting for ElementHandle to avoid TS errors if using $x
-          await (loginButton as any).click();
-      } else {
-          // Try hitting Enter
-          await page.keyboard.press('Enter');
+      if (!userFilled || !passFilled) {
+          throw new Error("Could not find visible username or password fields");
+      }
+
+      // Small delay
+      await new Promise(r => setTimeout(r, 1000));
+
+      // 3. Click Login / Press Enter
+      console.log("Submitting form...");
+      
+      // Try hitting Enter first - often the most reliable
+      await page.keyboard.press('Enter');
+      
+      // Also try to find and click the button just in case
+      try {
+          const loginButton = await page.$('button[type="submit"]') || 
+                              (await page.$x("//button[contains(., 'CONNECTER')]"))[0] ||
+                              (await page.$x("//div[contains(., 'CONNECTER')]"))[0] || // sometimes it's a div
+                              (await page.$x("//span[contains(., 'CONNECTER')]"))[0];
+
+          if (loginButton) {
+             console.log("Found a login button, clicking it too...");
+             await (loginButton as any).click();
+          }
+      } catch (e) {
+          console.log("Button click error (ignoring if Enter works):", e);
       }
 
       // 4. Wait for Navigation (Login Success)
       console.log("Waiting for navigation...");
-      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => console.log("Navigation timeout, checking if we are logged in..."));
+      
+      try {
+         await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 });
+      } catch (e) {
+         console.log("Navigation timeout or finished.");
+      }
 
-      // Check if we are logged in (URL change or element presence)
+      // Check URL
       const currentUrl = page.url();
-      console.log(`Current URL: ${currentUrl}`);
+      console.log(`Current URL after login attempt: ${currentUrl}`);
       
       if (currentUrl.includes("login")) {
-         throw new Error("Login failed (still on login page)");
+         // Debug: Log HTML to understand why it failed
+         const html = await page.content();
+         console.log("Still on login page. Dumping page title and first 500 chars:");
+         const title = await page.title();
+         console.log("Title:", title);
+         console.log(html.substring(0, 500));
+         
+         throw new Error("Login failed (still on login page) - Check server logs for details");
       }
       
       // 5. Navigate to Export Page
