@@ -63,3 +63,60 @@
     @apply font-display font-medium tracking-tight text-foreground;
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white;
+    overflow: hidden;
+  }
+
+  body > *:not(#root) {
+    display: none !important;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide everything that is NOT the bulletin */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show the bulletin and its children */
+  #bulletin-wrapper, #bulletin-wrapper * {
+    visibility: visible;
+  }
+
+  #bulletin-wrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    height: 296mm !important; /* Slightly less than 297 to avoid overflow */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+  
+  /* Ensure background graphics are printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

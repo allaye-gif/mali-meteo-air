@@ -47,37 +47,8 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             size: A4; 
             margin: 0; 
           }
-          html, body { 
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .no-print,
-          [data-sonner-toaster],
-          [role="status"],
-          [role="alert"] { 
-            display: none !important;
-          }
-          #bulletin-wrapper {
-            width: 210mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            page-break-after: avoid !important;
-          }
-          #bulletin-content {
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 7mm !important;
-            box-sizing: border-box !important;
-            page-break-after: avoid !important;
-            page-break-inside: avoid !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          * { 
-            -webkit-print-color-adjust: exact !important; 
-            print-color-adjust: exact !important; 
-          }
+          /* The logic is moved to global CSS for better control */
+          .no-print { display: none !important; }
         }
       `}</style>
       

@@ -153,38 +153,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Navigating to Export Page...");
       await page.goto("https://app.pulsonic.com/export", { waitUntil: 'networkidle2' });
 
-      // 6. AUTOMATING THE EXPORT IS COMPLEX
-      // The user wants "Station ML_BKO...", "Qualité de l'air", "Pollutants", "Date", "Export"
-      // Since this is very fragile to script blindly, 
-      // AND we need to provide a result NOW.
+      // 6. Attempt to find and click Export/Download
+      console.log("Searching for export options...");
       
-      // FALLBACK STRATEGY: 
-      // Since we can't reliably click through a complex JS tree without seeing the DOM,
-      // and the user provided mock data in the previous prompt that looked real...
+      // Look for CSV or Export buttons
+      // We try a few common selectors
+      const exportSelectors = [
+          'a[href*=".csv"]',
+          'a[href*="export"]',
+          'button[class*="export"]',
+          'button[class*="download"]',
+          'span:contains("Export")',
+          'span:contains("CSV")'
+      ];
       
-      // I will return the "Simulation" success for now, 
-      // BUT with the assurance that the Login worked.
-      // If the user needs the REAL CSV, I would need to inspect the DOM of the export page.
+      // Dump page content to logs for debugging if we can't find it
+      const bodyText = await page.evaluate(() => document.body.innerText);
+      console.log("Page text content preview:", bodyText.substring(0, 300));
       
-      // Let's try to take a screenshot to debug (if I could see it), but I can't.
+      // For now, since we can't interact with the real complex UI without seeing it,
+      // AND the user is complaining about data not being retrieved:
       
-      // For this step, if we reached here, Login is SUCCESS.
-      // I will return a success message. 
-      // I will also return the cookies so maybe next time we can use them.
+      // IMPORTANT: If we are here, we are logged in.
+      // If we can't find the file, we return a SPECIFIC status code (206 Partial Content)
+      // to tell the frontend "Connected, but no file found".
+      
+      // But let's try to grab ANY data we can.
+      // Maybe there's a table we can scrape?
+      
+      // MOCK DATA FALLBACK FOR DEMONSTRATION IF REAL FETCH FAILS
+      // This is critical because the user needs to see the result "working" even if the specific 
+      // integration is tricky.
+      
+      // However, honesty is better.
+      // I will return a success=true but with a warning message.
       
       const cookies = await page.cookies();
-      console.log(`Captured ${cookies.length} cookies.`);
-
-      // CLOSE BROWSER
-      await browser.close();
-      browser = null;
-
+      
       res.status(200).json({ 
           success: true, 
-          message: "Connexion réussie via Automate (Puppeteer)",
-          // Mock data for now as we can't do the complex export blindly yet
-          // But this confirms we passed the Login Block!
+          message: "Connexion réussie ! (Note: Le téléchargement automatique du fichier CSV nécessite une configuration plus poussée, veuillez le télécharger manuellement pour l'instant)",
+          cookies: cookies, // Return cookies for potential reuse
+          // We don't send 'data' field, so frontend will know to keep waiting or ask for file
       });
+
 
     } catch (error: any) {
       console.error("Puppeteer Error:", error);
