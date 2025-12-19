@@ -70,11 +70,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`Found visible input: type=${type} name=${name} placeholder=${placeholder}`);
 
-          if (!userFilled && (type === 'text' || type === 'email' || !type)) {
-              await input.type("Prevision");
+          if (!userFilled && (type === 'text' || type === 'email' || !type || name === 'login')) {
+              await input.click();
+              await input.type("Prevision", { delay: 100 }); // Type slower
+              // Force framework to recognize change
+              await page.evaluate(el => {
+                  el.dispatchEvent(new Event('input', { bubbles: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                  el.dispatchEvent(new Event('blur', { bubbles: true }));
+              }, input);
               userFilled = true;
-          } else if (!passFilled && type === 'password') {
-              await input.type("Meteo2024");
+          } else if (!passFilled && (type === 'password' || name === 'password')) {
+              await input.click();
+              await input.type("Meteo2024", { delay: 100 });
+              await page.evaluate(el => {
+                  el.dispatchEvent(new Event('input', { bubbles: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                  el.dispatchEvent(new Event('blur', { bubbles: true }));
+              }, input);
               passFilled = true;
           }
       }
@@ -89,31 +102,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 3. Click Login / Press Enter
       console.log("Submitting form...");
       
-      // Try hitting Enter first - often the most reliable
-      await page.keyboard.press('Enter');
-      
-      // Also try to find and click the button just in case
-      try {
-          const loginButton = await page.$('button[type="submit"]') || 
-                              (await page.$x("//button[contains(., 'CONNECTER')]"))[0] ||
-                              (await page.$x("//div[contains(., 'CONNECTER')]"))[0] || // sometimes it's a div
-                              (await page.$x("//span[contains(., 'CONNECTER')]"))[0];
+      // Check for button state
+      const loginButton = await page.$('button[type="submit"]') || 
+                          (await page.$x("//button[contains(., 'CONNECTER')]"))[0] ||
+                          (await page.$x("//div[contains(., 'CONNECTER')]"))[0] || 
+                          (await page.$x("//span[contains(., 'CONNECTER')]"))[0];
 
-          if (loginButton) {
-             console.log("Found a login button, clicking it too...");
+      if (loginButton) {
+         const isDisabled = await page.evaluate(el => el.hasAttribute('disabled') || el.classList.contains('disabled'), loginButton);
+         console.log(`Login button found. Disabled? ${isDisabled}`);
+         
+         if (!isDisabled) {
+             console.log("Clicking login button...");
              await (loginButton as any).click();
-          }
-      } catch (e) {
-          console.log("Button click error (ignoring if Enter works):", e);
+         } else {
+             console.log("Login button is disabled! Trying to press Enter anyway...");
+             await page.keyboard.press('Enter');
+         }
+      } else {
+         console.log("No specific login button found, pressing Enter...");
+         await page.keyboard.press('Enter');
       }
 
       // 4. Wait for Navigation (Login Success)
-      console.log("Waiting for navigation...");
+      console.log("Waiting for navigation or URL change...");
       
       try {
-         await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: 10000 });
+         // Wait for URL to NOT include "login"
+         await page.waitForFunction(() => !window.location.href.includes('login'), { timeout: 15000 });
       } catch (e) {
-         console.log("Navigation timeout or finished.");
+         console.log("Timeout waiting for URL change.");
       }
 
       // Check URL
