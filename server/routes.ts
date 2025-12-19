@@ -15,35 +15,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jar = new CookieJar();
       const client = wrapper(axios.create({ jar }));
 
-      // 1. Login
-      const loginUrl = "https://app.pulsonic.com/login";
-      // We need to check if it's a JSON API or HTML form
-      // Usually modern apps are JSON or form-data. Let's try to fetch the login page first to see if there's a CSRF token.
+      // 1. GET the login page to find the real action URL and CSRF token
+      const loginPageUrl = "https://app.pulsonic.com/login";
+      const pageResponse = await client.get(loginPageUrl);
+      const $ = cheerio.load(pageResponse.data);
       
-      const loginPage = await client.get(loginUrl);
-      const $ = cheerio.load(loginPage.data);
       const csrfToken = $('meta[name="csrf-token"]').attr('content');
       
-      // Attempt login - trying common field names. 
-      // User said "email Prevision" and "mot de passe Meteo2024".
-      // But "Prevision" doesn't look like an email. Maybe username?
-      // Let's assume the fields are 'email' (or 'username') and 'password'.
+      // Find the form
+      const form = $('form').first();
+      let action = form.attr('action');
       
-      // Note: Without the exact payload structure, this is a guess.
-      // But we will try to mimic a standard login.
+      // Resolve action URL
+      if (!action) {
+        // If no action, it might be posting to the same URL or an API endpoint.
+        // Let's try to guess common API endpoints if form is missing (SPA)
+        console.log("No form action found. Trying standard API endpoints.");
+        action = "https://app.pulsonic.com/login"; // Default fallback, but likely wrong if 405
+      } else if (action && !action.startsWith('http')) {
+        // Resolve relative URL
+        action = new URL(action, loginPageUrl).href;
+      }
       
-      const loginPayload = {
-        email: "Prevision", // User said "email Prevision", so maybe the field is email but value is Prevision? Or Prevision@something? 
-                            // Or maybe the username field is "email".
-        password: "Meteo2024"
-      };
+      console.log(`Login Action URL found: ${action}`);
 
-      // Try POSTing to the login action URL (often the same as login page or /api/login or /login)
-      // We'll try posting to /login first.
+      // Inspect inputs to find the right field names
+      const inputs: Record<string, string> = {};
+      $('input').each((_, el) => {
+        const name = $(el).attr('name');
+        if (name) {
+          inputs[name] = ""; // placeholder
+        }
+      });
+      console.log("Form inputs found:", Object.keys(inputs));
+
+      // Determine credentials field names
+      // User said: "email Prevision" (value=Prevision) and "password Meteo2024"
+      // We look for a field that looks like 'email', 'user', 'login', 'identifiant'
       
-      await client.post(loginUrl, loginPayload, {
+      let userField = Object.keys(inputs).find(k => /email|user|login|identif/i.test(k)) || "email";
+      let passField = Object.keys(inputs).find(k => /pass|pwd/i.test(k)) || "password";
+
+      // Prepare payload
+      const loginPayload: Record<string, string> = {};
+      
+      // If there are hidden fields (CSRF, etc), include them
+      $('input[type="hidden"]').each((_, el) => {
+        const name = $(el).attr('name');
+        const value = $(el).attr('value');
+        if (name && value) {
+          loginPayload[name] = value;
+        }
+      });
+
+      loginPayload[userField] = "Prevision";
+      loginPayload[passField] = "Meteo2024";
+
+      console.log(`Attempting login to ${action} with user field '${userField}'`);
+
+      // 2. Perform Login Request
+      await client.post(action, loginPayload, {
         headers: {
-          'Content-Type': 'application/json', // or 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded', // Standard forms are usually urlencoded
+          'Referer': loginPageUrl,
+          'Origin': 'https://app.pulsonic.com',
           'X-CSRF-TOKEN': csrfToken
         }
       });
