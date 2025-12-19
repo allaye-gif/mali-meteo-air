@@ -66,8 +66,8 @@
 
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 0;
+    size: A4;
+    margin: 0mm;
   }
 
   html, body {
@@ -76,9 +76,9 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white;
-    overflow: visible !important; /* Changed from hidden to visible */
   }
 
+  /* Hide everything that is NOT the bulletin wrapper */
   body > *:not(#root) {
     display: none !important;
   }
@@ -86,36 +86,51 @@
   #root {
     width: 100%;
     height: 100%;
-    margin: 0;
-    padding: 0;
   }
 
-  /* Hide everything that is NOT the bulletin */
   body * {
     visibility: hidden;
   }
 
-  /* Show the bulletin and its children */
+  /* Target the wrapper specifically */
   #bulletin-wrapper, #bulletin-wrapper * {
     visibility: visible;
   }
 
   #bulletin-wrapper {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     width: 210mm !important;
-    min-height: 297mm !important;
+    height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
     background: white !important;
-    transform: scale(0.98); /* Slight scale down to ensure fit */
-    transform-origin: top left;
+    z-index: 9999;
+    
+    /* Remove any transforms that might cause whitespace */
+    transform: none !important;
+    
+    /* Ensure flex column works for full height */
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #bulletin-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+    /* Adjust padding for print - standard A4 margins */
+    padding: 15mm !important; 
   }
   
-  /* Ensure background graphics are printed */
+  /* Ensure footer stays at bottom */
+  footer {
+    margin-top: auto !important;
+  }
+
+  /* Force background colors */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
