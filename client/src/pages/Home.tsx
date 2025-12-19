@@ -53,32 +53,28 @@ export default function Home() {
       const result = await response.json();
       
       if (result.success) {
-        // In a real scenario, the backend would return the CSV content
-        // For now, we simulate a successful fetch with mock data if the backend returns success
-        // Or if the backend returns the CSV string, we parse it.
         
-        toast({
-          title: "Connexion réussie",
-          description: "Récupération des données depuis PulsoWeb...",
-        });
-
-        // SIMULATION: If backend doesn't return real CSV yet, use a mock file
-        // In production, 'result.csvContent' would be passed to parseCSV
-        
-        // Let's create a mock file for demonstration if real data isn't there
-        const mockContent = `Station;NO2;SO2;CO;O3;PM2.5;PM10
-BKO 1;140;436;3047;191;1;1
-LASSA;51;0;800;38;2522;4881
-SOTUBA;65;0;1533;26;2954;5936
-BAMAKO-UNIVERSITE;87;0;2635;22;1170;3343`;
-        
-        const blob = new Blob([mockContent], { type: 'text/csv' });
-        const file = new File([blob], `pulsoweb_export_${new Date().toISOString().split('T')[0]}.csv`, { type: 'text/csv' });
-        
-        const parsed = await parseCSV(file);
-        if (parsed) {
-           setData(parsed);
+        // Check if we actually got cookies back but no data
+        if (result.cookies && result.cookies.length > 0) {
+           toast({
+             title: "Connecté à PulsoWeb",
+             description: "Succès ! Le téléchargement automatique étant bloqué par sécurité, veuillez télécharger le CSV manuellement et le déposer ici.",
+             duration: 8000,
+           });
+           
+           // We do NOT use the mock data anymore to avoid confusion
+           // The user explicitly said "il n'a pas pris les données"
+           // So showing fake data is confusing.
+           // Instead, we stop loading and let them drop the file.
+           
+        } else {
+             // If completely successful (future implementation)
+             toast({
+              title: "Succès",
+              description: result.message,
+            });
         }
+
       } else {
         throw new Error(result.message);
       }

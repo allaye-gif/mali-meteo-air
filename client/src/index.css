@@ -76,7 +76,7 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white;
-    overflow: hidden;
+    overflow: visible !important; /* Changed from hidden to visible */
   }
 
   body > *:not(#root) {
@@ -105,13 +105,14 @@
     left: 0;
     top: 0;
     width: 210mm !important;
-    height: 296mm !important; /* Slightly less than 297 to avoid overflow */
+    min-height: 297mm !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background: white !important;
-    overflow: hidden !important;
+    transform: scale(0.98); /* Slight scale down to ensure fit */
+    transform-origin: top left;
   }
   
   /* Ensure background graphics are printed */
