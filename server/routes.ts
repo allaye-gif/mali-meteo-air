@@ -14,13 +14,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Launch browser - TRYING SYSTEM CHROMIUM PATH
       // On Nix/Replit, chromium is usually in the path or typical locations
       
-      const executablePath = process.env.CHROMIUM_PATH || 
-                             '/nix/store/'-'*chromium*'/bin/chromium' || // fuzzy guess logic not needed if we rely on PATH lookup by not specifying it or using 'chromium'
-                             'chromium';
+      const executablePath = process.env.CHROMIUM_PATH || 'chromium';
 
       browser = await puppeteer.launch({
         headless: true,
-        executablePath: 'chromium', // Use system installed chromium
+        executablePath, // Use system installed chromium
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox',
