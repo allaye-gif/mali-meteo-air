@@ -15,73 +15,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jar = new CookieJar();
       const client = wrapper(axios.create({ jar }));
 
-      // 1. GET the login page to find the real action URL and CSRF token
+      // 1. Define potential login endpoints
+      const potentialEndpoints = [
+        "https://app.pulsonic.com/api/login",
+        "https://app.pulsonic.com/api/v1/login",
+        "https://app.pulsonic.com/auth/login",
+        "https://app.pulsonic.com/login", // Fallback, we know this gives 405 for POST but maybe JSON works?
+      ];
+
+      // Try scraping first to be sure
       const loginPageUrl = "https://app.pulsonic.com/login";
-      const pageResponse = await client.get(loginPageUrl);
-      const $ = cheerio.load(pageResponse.data);
+      let action = "";
+      let csrfToken = "";
       
-      const csrfToken = $('meta[name="csrf-token"]').attr('content');
-      
-      // Find the form
-      const form = $('form').first();
-      let action = form.attr('action');
-      
-      // Resolve action URL
-      if (!action) {
-        // If no action, it might be posting to the same URL or an API endpoint.
-        // Let's try to guess common API endpoints if form is missing (SPA)
-        console.log("No form action found. Trying standard API endpoints.");
-        action = "https://app.pulsonic.com/login"; // Default fallback, but likely wrong if 405
-      } else if (action && !action.startsWith('http')) {
-        // Resolve relative URL
-        action = new URL(action, loginPageUrl).href;
+      try {
+        const pageResponse = await client.get(loginPageUrl);
+        const $ = cheerio.load(pageResponse.data);
+        csrfToken = $('meta[name="csrf-token"]').attr('content') || "";
+        const form = $('form').first();
+        const scrapedAction = form.attr('action');
+        
+        if (scrapedAction) {
+           action = scrapedAction.startsWith('http') ? scrapedAction : new URL(scrapedAction, loginPageUrl).href;
+           console.log(`Found form action: ${action}`);
+           potentialEndpoints.unshift(action); // Put found action first
+        }
+      } catch (e) {
+        console.log("Could not scrape login page, proceeding with guesses.");
       }
+
+      // Credentials
+      const payload = {
+        email: "Prevision", 
+        password: "Meteo2024"
+      };
+
+      // Try endpoints until one works
+      let loginSuccess = false;
       
-      console.log(`Login Action URL found: ${action}`);
-
-      // Inspect inputs to find the right field names
-      const inputs: Record<string, string> = {};
-      $('input').each((_, el) => {
-        const name = $(el).attr('name');
-        if (name) {
-          inputs[name] = ""; // placeholder
+      for (const endpoint of potentialEndpoints) {
+        try {
+          console.log(`Trying login at: ${endpoint}`);
+          
+          // Try JSON first (modern apps)
+          await client.post(endpoint, payload, {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': csrfToken,
+              'Origin': 'https://app.pulsonic.com',
+              'Referer': 'https://app.pulsonic.com/login'
+            }
+          });
+          
+          console.log(`Login SUCCESS at ${endpoint}`);
+          loginSuccess = true;
+          break; // Stop if success
+          
+        } catch (error: any) {
+          console.log(`Failed at ${endpoint}: ${error.response?.status} ${error.response?.statusText}`);
+          
+          // If 405 (Method Not Allowed), maybe it wants form-data?
+          if (error.response?.status === 405 || error.response?.status === 400) {
+             try {
+                console.log(`Retrying ${endpoint} with form-data...`);
+                await client.post(endpoint, payload, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                });
+                console.log(`Login SUCCESS at ${endpoint} (form-data)`);
+                loginSuccess = true;
+                break;
+             } catch (e) {
+                console.log(`Failed retry at ${endpoint}`);
+             }
+          }
         }
-      });
-      console.log("Form inputs found:", Object.keys(inputs));
+      }
 
-      // Determine credentials field names
-      // User said: "email Prevision" (value=Prevision) and "password Meteo2024"
-      // We look for a field that looks like 'email', 'user', 'login', 'identifiant'
-      
-      let userField = Object.keys(inputs).find(k => /email|user|login|identif/i.test(k)) || "email";
-      let passField = Object.keys(inputs).find(k => /pass|pwd/i.test(k)) || "password";
-
-      // Prepare payload
-      const loginPayload: Record<string, string> = {};
-      
-      // If there are hidden fields (CSRF, etc), include them
-      $('input[type="hidden"]').each((_, el) => {
-        const name = $(el).attr('name');
-        const value = $(el).attr('value');
-        if (name && value) {
-          loginPayload[name] = value;
-        }
-      });
-
-      loginPayload[userField] = "Prevision";
-      loginPayload[passField] = "Meteo2024";
-
-      console.log(`Attempting login to ${action} with user field '${userField}'`);
-
-      // 2. Perform Login Request
-      await client.post(action, loginPayload, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Standard forms are usually urlencoded
-          'Referer': loginPageUrl,
-          'Origin': 'https://app.pulsonic.com',
-          'X-CSRF-TOKEN': csrfToken
-        }
-      });
+      if (!loginSuccess) {
+        throw new Error("Impossible de se connecter à PulsoWeb (tous les endpoints ont échoué)");
+      }
 
       // 2. After login, we need to find the data.
       // Since we don't have the export URL, we'll try to fetch the dashboard/home page and look for CSV links.
