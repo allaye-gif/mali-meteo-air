@@ -122,7 +122,7 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           </section>
 
           {/* DATA TABLE */}
-          <section className="mb-6 grow">
+          <section className="mb-4">
             <h3 className="font-bold text-blue-900 uppercase mb-3 text-xs border-b border-slate-200 pb-2 flex items-center gap-2">
               <Wind className="w-3 h-3" />
               Détails du Réseau de Surveillance (Concentrations Max)
@@ -167,7 +167,7 @@ export function Bulletin({ data, onReset }: BulletinProps) {
           </section>
 
           {/* ECO GESTE & LEGEND & ADVICE - Bottom Area */}
-          <div className="mt-auto shrink-0">
+          <div>
             {/* ECO GESTE */}
             <section className="mb-4 grid grid-cols-3 gap-3">
                <div className="col-span-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center gap-3 shadow-sm">
@@ -239,14 +239,8 @@ export function Bulletin({ data, onReset }: BulletinProps) {
             </div>
 
             {/* FOOTER */}
-            <footer className="text-center border-t-2 border-blue-900 pt-3">
-              <p className="font-bold text-blue-900 text-[10px] uppercase mb-0.5">Agence Nationale de la Météorologie (MALI MÉTÉO)</p>
-              <p className="text-[10px] text-slate-500">
-                Siège Social : Bamako, Mali • Tél : (+223) 20 20 20 20 • Site Web : www.malimeteo.ml
-              </p>
-              <p className="text-[8px] text-slate-400 mt-1 italic bg-slate-50 inline-block px-3 py-0.5 rounded-full">
-                Bulletin généré le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
+            <footer className="text-center border-t-2 border-blue-900 pt-3 mt-4">
+              <p className="font-bold text-blue-900 text-[10px] uppercase">Agence Nationale de la Météorologie (MALI MÉTÉO)</p>
             </footer>
           </div>
 
