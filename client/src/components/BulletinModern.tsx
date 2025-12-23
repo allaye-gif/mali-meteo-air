@@ -11,12 +11,12 @@ interface BulletinModernProps {
 }
 
 const COLORS = {
-  good: '#4ade80',     
-  moderate: '#facc15', 
-  unhealthySens: '#fb923c', 
-  unhealthy: '#f87171', 
-  veryUnhealthy: '#a855f7', 
-  hazardous: '#be123c', 
+  good: 'hsl(155, 30%, 60%)',     
+  moderate: 'hsl(45, 60%, 70%)', 
+  unhealthySens: 'hsl(30, 60%, 70%)', 
+  unhealthy: 'hsl(0, 50%, 75%)', 
+  veryUnhealthy: 'hsl(280, 30%, 70%)', 
+  hazardous: 'hsl(300, 20%, 40%)', 
 };
 
 const getStatusColor = (aqi: number) => {
@@ -44,11 +44,15 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
     const originalTitle = document.title;
     const safeDate = data.date.replace(/[\/\\:*?"<>|]/g, '-');
     const filename = `Bulletin Qualité de l'air du ${safeDate}`;
+    
     document.title = filename;
 
     setTimeout(() => {
       window.print();
-      setTimeout(() => { document.title = originalTitle; }, 500);
+      
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 500);
     }, 500);
   };
 
@@ -70,7 +74,7 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
   };
 
   return (
-    <div className="flex flex-col items-center bg-slate-100 min-h-screen p-8">
+    <div className="flex flex-col items-center bg-[hsl(210,10%,96%)] min-h-screen p-8">
       <style>{`
         @media print {
           @page { 
@@ -101,7 +105,7 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
             left: 0;
             width: 210mm;
             height: 297mm;
-            padding: 0 !important;
+            padding: 15mm !important;
             margin: 0 !important;
             background: white;
             z-index: 9999;
@@ -109,6 +113,7 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
             transform-origin: top left;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
           }
           
           * {
@@ -142,20 +147,20 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
             Design Classique
           </Button>
         )}
-        <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 text-white rounded-full gap-2" data-testid="button-print-modern">
+        <Button onClick={handlePrint} className="bg-[hsl(210,60%,50%)] hover:bg-[hsl(210,60%,45%)] text-white rounded-full gap-2" data-testid="button-print-modern">
           <Printer className="w-4 h-4" />
           Imprimer / Enregistrer PDF
         </Button>
       </div>
 
-      <div className="shadow-2xl mb-20 bg-white rounded-lg overflow-hidden">
+      <div className="shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] mb-20 bg-white rounded-2xl overflow-hidden">
         <div 
           ref={contentRef}
           id="bulletin-modern-content"
-          className="relative text-slate-800 flex flex-col"
+          className="relative text-[hsl(210,10%,30%)] flex flex-col p-[15mm] box-border"
         >
-          {/* HEADER - Blue Gradient */}
-          <header className="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-5 flex justify-between items-center">
+          {/* HEADER - Soft Blue Gradient */}
+          <header className="bg-gradient-to-r from-[hsl(210,70%,55%)] to-[hsl(200,70%,60%)] text-white p-5 flex justify-between items-center rounded-xl mb-4 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-md">
                 <img src={logoMaliMeteo} alt="Mali Météo" className="w-full h-full object-cover" />
@@ -168,14 +173,14 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
             <div className="text-right">
               <p className="text-[10px] uppercase opacity-70 mb-1">Date du Relevé</p>
               <p className="text-3xl font-bold">{data.date}</p>
-              <span className="text-[10px] bg-green-500 px-3 py-1 rounded-full uppercase font-semibold inline-flex items-center gap-1 mt-1">
+              <span className="text-[10px] bg-[hsl(155,40%,50%)] px-3 py-1 rounded-full uppercase font-semibold inline-flex items-center gap-1 mt-1 shadow-sm">
                 <CheckCircle className="w-3 h-3" /> Validité: 24H
               </span>
             </div>
           </header>
 
-          {/* ALERT BANNER */}
-          <div className="bg-amber-400 text-amber-900 text-center py-2.5 px-4 flex items-center justify-center gap-2">
+          {/* ALERT BANNER - Soft Yellow */}
+          <div className="bg-[hsl(45,80%,75%)] text-[hsl(30,60%,25%)] text-center py-2.5 px-4 flex items-center justify-center gap-2 rounded-xl mb-4 shadow-sm">
             <AlertTriangle className="w-5 h-5" />
             <span className="font-bold text-sm uppercase tracking-wide">
               Alerte : Qualité de l'Air {getAQILabel(data.cityMaxAQI)} (AQI: {data.cityMaxAQI})
@@ -183,67 +188,67 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
           </div>
 
           {/* MAIN CONTENT */}
-          <div className="p-6 flex-1">
+          <div className="flex-1">
             {/* AQI + Pollutants Grid */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-2 gap-5 mb-5">
               {/* Left: AQI Display */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                <p className="text-center text-sm text-slate-500 mb-1">Indice de Qualité de l'Air (AQI)</p>
-                <p className="text-center text-xs text-slate-400 mb-4">Valeur maximale mesurée</p>
+              <div className="bg-[hsl(40,20%,99%)] rounded-2xl p-5 border border-[hsl(30,10%,90%)] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)]">
+                <p className="text-center text-sm text-[hsl(210,10%,50%)] mb-1">Indice de Qualité de l'Air (AQI)</p>
+                <p className="text-center text-xs text-[hsl(210,10%,60%)] mb-3">Valeur maximale mesurée</p>
                 
-                <div className="text-center mb-5">
+                <div className="text-center mb-4">
                   <span 
-                    className="text-8xl font-bold inline-block leading-none"
+                    className="text-7xl font-bold inline-block leading-none"
                     style={{ color: getStatusColor(data.cityMaxAQI) }}
                   >
                     {data.cityMaxAQI}
                   </span>
                   <p 
-                    className="text-xl font-bold uppercase mt-2"
+                    className="text-lg font-bold uppercase mt-2"
                     style={{ color: getStatusColor(data.cityMaxAQI) }}
                   >
                     {getAQILabel(data.cityMaxAQI)}
                   </p>
                 </div>
 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getStatusColor(data.cityMaxAQI) }} />
-                    <span className="text-slate-700"><strong>Polluant Critique :</strong> {mainPollutant}</span>
+                    <span className="text-[hsl(210,10%,40%)]"><strong>Polluant Critique :</strong> {mainPollutant}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-3 h-3 text-blue-500" />
-                    <span className="text-slate-700"><strong>Station :</strong> {mainStation?.name.replace('ML_', '').replace(/_/g, ' ').replace('QA', '').trim()}</span>
+                    <MapPin className="w-3 h-3 text-[hsl(200,30%,60%)]" />
+                    <span className="text-[hsl(210,10%,40%)]"><strong>Station :</strong> {mainStation?.name.replace('ML_', '').replace(/_/g, ' ').replace('QA', '').trim()}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Activity className="w-3 h-3 text-slate-400" />
-                    <span className="text-slate-700"><strong>Concentration Maximale :</strong> {getConcentration()}</span>
+                    <Activity className="w-3 h-3 text-[hsl(210,10%,60%)]" />
+                    <span className="text-[hsl(210,10%,40%)]"><strong>Concentration Maximale :</strong> {getConcentration()}</span>
                   </div>
                 </div>
               </div>
 
               {/* Right: Pollutants Grid */}
               <div>
-                <h3 className="text-sm font-bold text-blue-600 uppercase mb-4 flex items-center gap-2">
+                <h3 className="text-sm font-bold text-[hsl(210,60%,50%)] uppercase mb-3 flex items-center gap-2">
                   <Wind className="w-4 h-4" />
                   Polluants Surveillés
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {pollutantData.map((pollutant) => {
                     const isMain = pollutant.key === mainPollutant;
                     const IconComponent = pollutant.icon;
                     return (
                       <div 
                         key={pollutant.key}
-                        className={`p-4 rounded-xl border text-center transition-all ${
+                        className={`p-3 rounded-xl border text-center transition-all shadow-[0_2px_8px_-2px_rgba(0,0,0,0.04)] ${
                           isMain 
-                            ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-200' 
-                            : 'bg-slate-50 border-slate-200'
+                            ? 'bg-[hsl(200,30%,95%)] border-[hsl(200,40%,70%)]' 
+                            : 'bg-[hsl(40,20%,99%)] border-[hsl(30,10%,92%)]'
                         }`}
                       >
-                        <IconComponent className={`w-6 h-6 mx-auto mb-2 ${isMain ? 'text-blue-600' : 'text-slate-400'}`} />
-                        <p className={`font-bold text-base ${isMain ? 'text-blue-700' : 'text-slate-700'}`}>{pollutant.key}</p>
-                        <p className="text-[10px] text-slate-500">{pollutant.label}</p>
+                        <IconComponent className={`w-5 h-5 mx-auto mb-1.5 ${isMain ? 'text-[hsl(200,50%,50%)]' : 'text-[hsl(210,10%,65%)]'}`} />
+                        <p className={`font-bold text-sm ${isMain ? 'text-[hsl(200,50%,40%)]' : 'text-[hsl(210,10%,40%)]'}`}>{pollutant.key}</p>
+                        <p className="text-[9px] text-[hsl(210,10%,55%)]">{pollutant.label}</p>
                       </div>
                     );
                   })}
@@ -252,67 +257,67 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
             </div>
 
             {/* Health Recommendations */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mb-6">
-              <h3 className="text-sm font-bold text-blue-600 uppercase mb-4 flex items-center gap-2">
+            <div className="bg-[hsl(40,20%,99%)] rounded-2xl p-4 border border-[hsl(30,10%,90%)] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] mb-5">
+              <h3 className="text-sm font-bold text-[hsl(210,60%,50%)] uppercase mb-3 flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 Recommandations Santé
               </h3>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-2 text-xs">
                 <p>
-                  <strong className="text-slate-800">Population Générale :</strong>{' '}
-                  <span className="text-slate-600">{advice.general}</span>
+                  <strong className="text-[hsl(210,10%,35%)]">Population Générale :</strong>{' '}
+                  <span className="text-[hsl(210,10%,50%)]">{advice.general}</span>
                 </p>
                 <p>
-                  <strong className="text-slate-800">Groupes sensibles :</strong>{' '}
-                  <span className="text-slate-600">{advice.sensitive}</span>
+                  <strong className="text-[hsl(210,10%,35%)]">Groupes sensibles :</strong>{' '}
+                  <span className="text-[hsl(210,10%,50%)]">{advice.sensitive}</span>
                 </p>
               </div>
             </div>
 
             {/* AQI Scale */}
-            <div className="mb-6">
-              <h3 className="text-xs font-bold text-slate-600 uppercase mb-3 flex items-center gap-2">
+            <div className="mb-5">
+              <h3 className="text-[10px] font-bold text-[hsl(210,10%,50%)] uppercase mb-2 flex items-center gap-2">
                 <Activity className="w-3 h-3" />
                 Échelle de Qualité de l'Air (AQI)
               </h3>
-              <div className="flex rounded-xl overflow-hidden text-[9px] font-bold text-white shadow-sm">
-                <div className="flex-1 py-2.5 text-center" style={{ backgroundColor: COLORS.good }}>Bonne (0-50)</div>
-                <div className="flex-1 py-2.5 text-center text-slate-800" style={{ backgroundColor: COLORS.moderate }}>Modérée (51-100)</div>
-                <div className="flex-1 py-2.5 text-center" style={{ backgroundColor: COLORS.unhealthySens }}>Peu Saine GS (101-150)</div>
-                <div className="flex-1 py-2.5 text-center" style={{ backgroundColor: COLORS.unhealthy }}>Peu Saine (151-200)</div>
-                <div className="flex-1 py-2.5 text-center" style={{ backgroundColor: COLORS.veryUnhealthy }}>Très Peu Saine (201-300)</div>
-                <div className="flex-1 py-2.5 text-center" style={{ backgroundColor: COLORS.hazardous }}>Dangereuse (301-500)</div>
+              <div className="flex rounded-xl overflow-hidden text-[8px] font-semibold shadow-sm">
+                <div className="flex-1 py-2 text-center text-white" style={{ backgroundColor: COLORS.good }}>Bonne (0-50)</div>
+                <div className="flex-1 py-2 text-center text-[hsl(30,30%,25%)]" style={{ backgroundColor: COLORS.moderate }}>Modérée (51-100)</div>
+                <div className="flex-1 py-2 text-center text-white" style={{ backgroundColor: COLORS.unhealthySens }}>Peu Saine GS (101-150)</div>
+                <div className="flex-1 py-2 text-center text-white" style={{ backgroundColor: COLORS.unhealthy }}>Peu Saine (151-200)</div>
+                <div className="flex-1 py-2 text-center text-white" style={{ backgroundColor: COLORS.veryUnhealthy }}>Très Peu Saine (201-300)</div>
+                <div className="flex-1 py-2 text-center text-white" style={{ backgroundColor: COLORS.hazardous }}>Dangereuse (301-500)</div>
               </div>
             </div>
 
             {/* Understanding Section */}
-            <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5">
-              <h3 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
+            <div className="bg-[hsl(40,20%,99%)] rounded-2xl border border-[hsl(30,10%,90%)] p-4 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)]">
+              <h3 className="text-xs font-bold text-[hsl(210,10%,40%)] uppercase mb-3 flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 Comprendre Notre Bulletin
               </h3>
-              <div className="grid grid-cols-3 gap-6 text-xs">
-                <div className="bg-white rounded-xl p-4 border border-slate-100">
-                  <p className="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                    <ChevronUp className="w-4 h-4 text-blue-500" /> AQI (Score central)
+              <div className="grid grid-cols-3 gap-4 text-[10px]">
+                <div className="bg-white rounded-xl p-3 border border-[hsl(30,10%,92%)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)]">
+                  <p className="font-bold text-[hsl(210,10%,40%)] mb-1.5 flex items-center gap-1">
+                    <ChevronUp className="w-3 h-3 text-[hsl(200,50%,55%)]" /> AQI (Score central)
                   </p>
-                  <p className="text-slate-500 leading-relaxed">
+                  <p className="text-[hsl(210,10%,55%)] leading-relaxed">
                     Indique la gravité de la pollution maximale mesurée. Plus le chiffre est élevé (jusqu'à 500), plus l'air est potentiellement nocif pour la santé.
                   </p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-slate-100">
-                  <p className="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-orange-500" /> Polluant Critique
+                <div className="bg-white rounded-xl p-3 border border-[hsl(30,10%,92%)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)]">
+                  <p className="font-bold text-[hsl(210,10%,40%)] mb-1.5 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-[hsl(30,60%,55%)]" /> Polluant Critique
                   </p>
-                  <p className="text-slate-500 leading-relaxed">
+                  <p className="text-[hsl(210,10%,55%)] leading-relaxed">
                     C'est la substance (particules fines, ozone, etc.) dont la concentration est la plus élevée et qui donne le score AQI de la journée.
                   </p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-slate-100">
-                  <p className="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-green-500" /> Recommandations
+                <div className="bg-white rounded-xl p-3 border border-[hsl(30,10%,92%)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.03)]">
+                  <p className="font-bold text-[hsl(210,10%,40%)] mb-1.5 flex items-center gap-1">
+                    <Shield className="w-3 h-3 text-[hsl(155,40%,50%)]" /> Recommandations
                   </p>
-                  <p className="text-slate-500 leading-relaxed">
+                  <p className="text-[hsl(210,10%,55%)] leading-relaxed">
                     Suivez-les strictement pour minimiser votre exposition et protéger les groupes sensibles (enfants, personnes âgées, etc.).
                   </p>
                 </div>
@@ -321,9 +326,9 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
           </div>
 
           {/* FOOTER */}
-          <footer className="bg-slate-100 text-center py-4 border-t border-slate-200 mt-auto">
-            <p className="text-xs font-bold text-slate-600 uppercase">
-              Mali Météo - Agence Nationale de la Météorologie
+          <footer className="mt-auto text-center border-t-2 border-[hsl(210,60%,50%)] pt-3">
+            <p className="font-bold text-[hsl(210,60%,45%)] text-[11px] uppercase">
+              Agence Nationale de la Météorologie (MALI MÉTÉO)
             </p>
           </footer>
 
