@@ -3,8 +3,8 @@ import { FileUpload } from '@/components/FileUpload';
 import { Bulletin } from '@/components/Bulletin';
 import { parseCSV, DailySummary } from '@/lib/air-quality';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CloudDownload } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Wind, MapPin } from 'lucide-react';
+import logoMaliMeteo from '@assets/generated_images/mali_meteo_real_logo.png';
 
 export default function Home() {
   const [data, setData] = useState<DailySummary | null>(null);
@@ -16,8 +16,7 @@ export default function Home() {
     try {
       const result = await parseCSV(file);
       if (result) {
-        // Simulate a small delay for "processing" feel
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 600));
         setData(result);
         toast({
           title: "Analyse terminée",
@@ -42,98 +41,60 @@ export default function Home() {
     }
   };
 
-  const handlePulsoWebLoad = async () => {
-    setLoading(true);
-    try {
-      // Call our backend proxy
-      const response = await fetch('/api/pulsoweb/fetch', {
-        method: 'POST',
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        
-        // Check if we actually got cookies back but no data
-        if (result.cookies && result.cookies.length > 0) {
-           toast({
-             title: "Connecté à PulsoWeb",
-             description: "Succès ! Le téléchargement automatique étant bloqué par sécurité, veuillez télécharger le CSV manuellement et le déposer ici.",
-             duration: 8000,
-           });
-           
-           // We do NOT use the mock data anymore to avoid confusion
-           // The user explicitly said "il n'a pas pris les données"
-           // So showing fake data is confusing.
-           // Instead, we stop loading and let them drop the file.
-           
-        } else {
-             // If completely successful (future implementation)
-             toast({
-              title: "Succès",
-              description: result.message,
-            });
-        }
-
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Erreur PulsoWeb",
-        description: "Impossible de récupérer les données (Vérifiez les identifiants backend).",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/20 transition-colors duration-700">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 text-foreground font-sans">
       
-      {/* Subtle Ambient Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[40%] -right-[20%] w-[80%] h-[80%] rounded-full bg-secondary/40 blur-[120px] opacity-60" />
-        <div className="absolute top-[20%] -left-[20%] w-[60%] h-[60%] rounded-full bg-accent/20 blur-[100px] opacity-40" />
-      </div>
-
-      <div className="relative z-10 container mx-auto px-4 py-12 min-h-screen flex flex-col">
+      <div className="relative z-10 container mx-auto px-4 py-8 min-h-screen flex flex-col">
+        {!data && (
+          <header className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-blue-100 shadow-lg bg-white flex items-center justify-center">
+                <img src={logoMaliMeteo} alt="Mali Météo" className="w-full h-full object-cover" />
+              </div>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-blue-900 mb-2">
+              Générateur de Bulletin Qualité de l'Air
+            </h1>
+            <p className="text-slate-500 text-sm flex items-center justify-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Zone de Bamako, Mali
+            </p>
+          </header>
+        )}
+        
         <main className="flex-1 flex flex-col items-center justify-center w-full">
           {loading ? (
-            <div className="flex flex-col items-center animate-in fade-in duration-700">
+            <div className="flex flex-col items-center animate-in fade-in duration-500">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full border-4 border-slate-100" />
-                <div className="absolute inset-0 w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                <Wind className="w-12 h-12 text-blue-400 animate-pulse" />
               </div>
-              <p className="mt-6 text-slate-400 font-light tracking-wide uppercase text-xs">Analyse en cours...</p>
+              <p className="mt-4 text-slate-500 font-medium text-sm">Analyse des données...</p>
             </div>
           ) : !data ? (
-            <div className="flex flex-col items-center gap-6 w-full max-w-lg">
+            <div className="flex flex-col items-center gap-4 w-full max-w-md">
               <FileUpload onFileSelect={handleFileSelect} />
               
-              <div className="relative w-full flex items-center py-2">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase tracking-wider">OU</span>
-                <div className="flex-grow border-t border-slate-200"></div>
+              <div className="text-center mt-4 p-4 bg-white/60 backdrop-blur rounded-xl border border-slate-200">
+                <p className="text-xs text-slate-500 mb-2 font-medium">Stations supportées :</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {['BKO Qualité Air 1', 'Université', 'Lassa', 'Sotuba'].map(s => (
+                    <span key={s} className="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-100">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-3">
+                  Polluants : NO2, SO2, CO, O3, PM2.5, PM10
+                </p>
               </div>
-
-              <Button 
-                onClick={handlePulsoWebLoad}
-                className="w-full h-14 bg-[#009EE0] hover:bg-[#008CC5] text-white rounded-2xl shadow-soft hover:shadow-lg transition-all duration-300 text-lg group"
-              >
-                <CloudDownload className="mr-3 h-6 w-6 group-hover:scale-110 transition-transform" />
-                Charger depuis PulsoWeb
-              </Button>
             </div>
           ) : (
             <Bulletin data={data} onReset={() => setData(null)} />
           )}
         </main>
         
-        <footer className="text-center py-8 opacity-50 hover:opacity-100 transition-opacity duration-500">
-          <p className="text-xs text-slate-400 uppercase tracking-widest font-light">AirQuality Bamako</p>
+        <footer className="text-center py-6">
+          <p className="text-xs text-slate-400">Mali Météo - Agence Nationale de la Météorologie</p>
         </footer>
       </div>
     </div>
