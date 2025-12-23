@@ -1,12 +1,13 @@
 import { useRef } from 'react';
 import { DailySummary, getAQILabel, getHealthAdvice } from '@/lib/air-quality';
-import { Printer, Activity, AlertTriangle, Info, ThermometerSun, Wind, Leaf, Bike, Car } from 'lucide-react';
+import { Printer, Activity, AlertTriangle, Info, ThermometerSun, Wind, Leaf, Bike, Car, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logoMaliMeteo from '@assets/generated_images/mali_meteo_real_logo.png';
 
 interface BulletinProps {
   data: DailySummary;
   onReset: () => void;
+  onToggleDesign?: () => void;
 }
 
 const COLORS = {
@@ -27,7 +28,7 @@ const getStatusColor = (aqi: number) => {
   return COLORS.hazardous;
 };
 
-export function Bulletin({ data, onReset }: BulletinProps) {
+export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -39,10 +40,16 @@ export function Bulletin({ data, onReset }: BulletinProps) {
   return (
     <div className="flex flex-col items-center bg-slate-100 min-h-screen">
       {/* Toolbar - Hidden in print */}
-      <div className="flex gap-4 my-8 sticky top-4 z-50 bg-white/90 backdrop-blur p-3 rounded-full shadow-lg border no-print">
+      <div className="flex gap-3 my-8 sticky top-4 z-50 bg-white/90 backdrop-blur p-3 rounded-full shadow-lg border no-print">
         <Button variant="outline" onClick={onReset} className="rounded-full" data-testid="button-new">
           Nouveau
         </Button>
+        {onToggleDesign && (
+          <Button variant="outline" onClick={onToggleDesign} className="rounded-full gap-2" data-testid="button-toggle-design">
+            <RefreshCw className="w-4 h-4" />
+            Design Moderne
+          </Button>
+        )}
         <Button onClick={handlePrint} className="bg-blue-900 hover:bg-blue-800 text-white rounded-full gap-2" data-testid="button-print">
           <Printer className="w-4 h-4" />
           Imprimer / PDF

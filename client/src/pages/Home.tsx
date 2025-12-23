@@ -1,15 +1,27 @@
 import { useState } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { Bulletin } from '@/components/Bulletin';
+import { BulletinModern } from '@/components/BulletinModern';
 import { parseCSV, DailySummary } from '@/lib/air-quality';
 import { useToast } from '@/hooks/use-toast';
-import { Wind, MapPin } from 'lucide-react';
+import { Wind, MapPin, Palette, RefreshCw } from 'lucide-react';
 import logoMaliMeteo from '@assets/generated_images/mali_meteo_real_logo.png';
+
+type DesignType = 'classic' | 'modern';
 
 export default function Home() {
   const [data, setData] = useState<DailySummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedDesign, setSelectedDesign] = useState<DesignType>('classic');
   const { toast } = useToast();
+  
+  const toggleDesign = () => {
+    setSelectedDesign(prev => prev === 'classic' ? 'modern' : 'classic');
+    toast({
+      title: "Design changé",
+      description: `Passage au design ${selectedDesign === 'classic' ? 'Moderne' : 'Classique'}`,
+    });
+  };
 
   const handleFileSelect = async (file: File) => {
     setLoading(true);
@@ -39,6 +51,10 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setData(null);
   };
 
   return (
@@ -71,10 +87,55 @@ export default function Home() {
               <p className="mt-4 text-slate-500 font-medium text-sm">Analyse des données...</p>
             </div>
           ) : !data ? (
-            <div className="flex flex-col items-center gap-4 w-full max-w-md">
+            <div className="flex flex-col items-center gap-6 w-full max-w-md">
+              {/* Design Selector */}
+              <div className="w-full bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+                <p className="text-xs text-slate-500 mb-3 font-medium flex items-center gap-2">
+                  <Palette className="w-4 h-4" />
+                  Choisissez votre design :
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setSelectedDesign('classic')}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${
+                      selectedDesign === 'classic' 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    data-testid="design-classic"
+                  >
+                    <div className="w-full h-12 bg-gradient-to-r from-blue-900 to-blue-700 rounded-lg mb-2 flex items-center justify-center">
+                      <span className="text-white text-[8px] font-bold">MALI MÉTÉO</span>
+                    </div>
+                    <p className={`text-sm font-semibold ${selectedDesign === 'classic' ? 'text-blue-700' : 'text-slate-700'}`}>
+                      Design Classique
+                    </p>
+                    <p className="text-[10px] text-slate-500">Tableau détaillé</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setSelectedDesign('modern')}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${
+                      selectedDesign === 'modern' 
+                        ? 'border-amber-500 bg-amber-50' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    data-testid="design-modern"
+                  >
+                    <div className="w-full h-12 bg-gradient-to-r from-amber-800 to-amber-600 rounded-lg mb-2 flex items-center justify-center">
+                      <span className="text-white text-[8px] font-bold">MALI MÉTÉO</span>
+                    </div>
+                    <p className={`text-sm font-semibold ${selectedDesign === 'modern' ? 'text-amber-700' : 'text-slate-700'}`}>
+                      Design Moderne
+                    </p>
+                    <p className="text-[10px] text-slate-500">Grille polluants</p>
+                  </button>
+                </div>
+              </div>
+
               <FileUpload onFileSelect={handleFileSelect} />
               
-              <div className="text-center mt-4 p-4 bg-white/60 backdrop-blur rounded-xl border border-slate-200">
+              <div className="text-center p-4 bg-white/60 backdrop-blur rounded-xl border border-slate-200">
                 <p className="text-xs text-slate-500 mb-2 font-medium">Stations supportées :</p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {['BKO Qualité Air 1', 'Université', 'Lassa', 'Sotuba'].map(s => (
@@ -89,7 +150,9 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <Bulletin data={data} onReset={() => setData(null)} />
+            selectedDesign === 'classic' 
+              ? <Bulletin data={data} onReset={handleReset} onToggleDesign={toggleDesign} />
+              : <BulletinModern data={data} onReset={handleReset} onToggleDesign={toggleDesign} />
           )}
         </main>
         
