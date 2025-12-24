@@ -1,0 +1,47 @@
+Voici une description détaillée des éléments visuels :
+
+1. La Palette de Couleurs (Échelle de Vigilance)
+Le bulletin suit une progression chromatique allant du bleu (sain) au marron (dangereux), visible dans l'échelle AQI en bas de l'image :
+
+Bleu Turquoise (0-50) : État « Bon ». Évoque la pureté et la sécurité.
+
+Jaune (51-100) : État « Modéré ». Couleur d'avertissement léger.
+
+Orange (101-150) : État « Peu Saine pour les Groupes Sensibles ». Signal d'attention.
+
+Rouge (151-200) : État « Peu Saine ». Couleur d'alerte classique pour le danger.
+
+Violet (201-300) : État « Très Peu Saine ». Niveau d'alerte élevé.
+
+Marron Foncé (301-500) : État « Dangereuse ». C'est la couleur dominante de l'en-tête de l'alerte actuelle, indiquant un niveau critique (le maximum de l'échelle).
+
+2. Les Pictogrammes des Polluants
+Dans la section « Polluants Surveillés », chaque substance est associée à un symbole gris foncé :
+
+PM2.5 (Particules fines) : Un nuage avec des pointillés dessous, symbolisant des poussières microscopiques qui retombent ou flottent.
+
+PM10 (Particules inhalables) : Un nuage plein. C'est le polluant critique ici, il est donc entouré d'un cadre marron épais pour attirer l'œil.
+
+O3 (Ozone) : Un soleil, car l'ozone de surface se forme généralement sous l'effet du rayonnement solaire.
+
+NO2 (Dioxyde d'azote) : Une usine avec une cheminée, rappelant que ce gaz provient majoritairement des combustions industrielles et automobiles.
+
+SO2 (Dioxyde de soufre) : Une goutte d'eau/liquide, souvent associée aux pluies acides ou aux émissions chimiques.
+
+CO (Monoxyde de carbone) : Une tête de profil avec des émanations au niveau du nez/bouche, illustrant l'inhalation d'un gaz toxique.
+
+3. Autres Symboles et Éléments Graphiques
+Le Triangle d'Alerte : Un triangle blanc contenant un point d'exclamation sur fond marron. C'est le symbole universel du danger imminent.
+
+La Croix de Santé : Une icône bleue avec un "+" (style mallette médicale) pour la section des recommandations sanitaires.
+
+Les Flèches Montantes : À côté de l'AQI, deux flèches verticales indiquent le suivi d'un indice de mesure.
+
+L'Entonnoir : Utilisé pour le « Polluant Critique », symbolisant le filtrage des données pour ne retenir que la plus préoccupante.
+
+La Main et la Bulle : Pour les recommandations, symbolisant le conseil et la protection.
+
+L'Horloge de Validité : En haut à droite, une petite icône de flèche circulaire dans un carré indique que la donnée est valable pour 24h.
+
+4. Structure et Contraste
+Le bulletin utilise un fond gris très clair pour détacher les blocs d'informations blancs, ce qui rend la lecture très aérée. Le bleu vif de l'en-tête (Mali Météo) apporte une identité institutionnelle sérieuse, tandis que le marron de l'alerte vient rompre cette harmonie pour créer un sentiment d'urgence.
