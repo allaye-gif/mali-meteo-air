@@ -27,6 +27,7 @@ export interface StationSummary {
   mainPollutantConcentration: number;
   mainPollutantUnit: string;
   aqi: number;
+  severityRatio: number; // How much the main pollutant exceeds its max breakpoint (for tie-breaking)
   aqiBreakdown: {
     NO2: number;
     SO2: number;
@@ -378,6 +379,12 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             );
             
             const mainPollutantUnit = POLLUTANT_UNITS[mainPollutantInfo.key];
+            
+            // Calculate severity ratio for station-level tie-breaking
+            // This is how much the main pollutant exceeds its max breakpoint
+            const bps = BREAKPOINTS[mainPollutantInfo.key];
+            const maxBreakpointConc = bps[bps.length - 1].cHigh;
+            const severityRatio = mainPollutantConcentration / maxBreakpointConc;
 
             return {
               name,
@@ -386,12 +393,20 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
               mainPollutantConcentration,
               mainPollutantUnit,
               aqi,
+              severityRatio,
               aqiBreakdown
             };
           });
 
-          // Sort stations by AQI (highest first) for consistent display
-          stationSummaries.sort((a, b) => b.aqi - a.aqi);
+          // Sort stations by AQI first, then by severity ratio (for tie-breaking when AQI=500)
+          // This ensures the station with the most extreme pollution is ranked first
+          stationSummaries.sort((a, b) => {
+            if (b.aqi !== a.aqi) {
+              return b.aqi - a.aqi; // Higher AQI first
+            }
+            // If AQI is equal (both at 500), compare severity ratios
+            return b.severityRatio - a.severityRatio; // Higher severity first
+          });
 
           // Calculate city-level statistics
           const cityAvgAQI = Math.round(
@@ -400,8 +415,8 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
 
           const cityMaxAQI = Math.max(...stationSummaries.map(s => s.aqi));
           
-          // Find the critical station (the one with maximum AQI)
-          const criticalStationData = stationSummaries.find(s => s.aqi === cityMaxAQI);
+          // The critical station is now the FIRST one after sorting (highest AQI, then highest severity)
+          const criticalStationData = stationSummaries[0];
           const criticalStation = criticalStationData?.name || '';
           const criticalPollutant = criticalStationData?.mainPollutant || 'PM10';
           const criticalConcentration = criticalStationData?.mainPollutantConcentration || 0;
