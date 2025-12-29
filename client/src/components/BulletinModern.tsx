@@ -64,13 +64,14 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
   
   const getConcentrationDisplay = () => {
     const conc = data.criticalConcentration;
-    if (!conc) return '---';
+    const unit = data.criticalUnit || 'µg/m³';
+    if (!conc && conc !== 0) return '---';
     
-    // PM uses µg/m³, others use ppb
-    if (criticalPollutant === 'PM10' || criticalPollutant === 'PM2.5') {
-      return `${conc.toFixed(0)} µg/m³`;
+    // Format based on unit precision
+    if (unit === 'ppm') {
+      return `${conc.toFixed(3)} ${unit}`;
     }
-    return `${conc.toFixed(0)} ppb`;
+    return `${Math.round(conc)} ${unit}`;
   };
 
   return (

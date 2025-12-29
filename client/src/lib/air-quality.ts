@@ -25,6 +25,7 @@ export interface StationSummary {
   maxPM10: number;
   mainPollutant: string;
   mainPollutantConcentration: number;
+  mainPollutantUnit: string;
   aqi: number;
   aqiBreakdown: {
     NO2: number;
@@ -44,18 +45,19 @@ export interface DailySummary {
   criticalStation: string;
   criticalPollutant: string;
   criticalConcentration: number;
+  criticalUnit: string;
 }
 
 // EPA AQI Breakpoints - Updated May 2024
 // Reference: https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf
 //
-// IMPORTANT: Input units from Pulsonic/air quality sensors:
-// - NO2, SO2: ppb (standard for AQ sensors)
-// - CO: ppb (sensors typically report ppb, EPA uses ppm - we convert internally)
-// - O3: ppb (sensors typically report ppb, EPA uses ppm - we convert internally)
-// - PM2.5, PM10: µg/m³ (standard)
-//
-// Breakpoints below are in the SENSOR UNITS (ppb for gases except PM)
+// Units per EPA specification:
+// - NO2: ppb (1-hour average)
+// - SO2: ppb (1-hour average)  
+// - CO: ppm (8-hour average)
+// - O3: ppm (8-hour average)
+// - PM2.5: µg/m³ (24-hour average)
+// - PM10: µg/m³ (24-hour average)
 
 const BREAKPOINTS = {
   // NO2: 1-hour average (ppb) - Truncate to integer
@@ -76,29 +78,23 @@ const BREAKPOINTS = {
     { cLow: 305, cHigh: 604, iLow: 201, iHigh: 300 },
     { cLow: 605, cHigh: 1004, iLow: 301, iHigh: 500 },
   ],
-  // CO: 8-hour average - CONVERTED TO PPB (EPA ppm * 1000)
-  // EPA uses ppm: 0-4.4, 4.5-9.4, 9.5-12.4, 12.5-15.4, 15.5-30.4, 30.5-50.4
-  // In ppb: 0-4400, 4500-9400, 9500-12400, 12500-15400, 15500-30400, 30500-50400
-  // Truncate to integer (ppb)
+  // CO: 8-hour average (ppm) - Truncate to 1 decimal (0.1 ppm)
   CO: [
-    { cLow: 0, cHigh: 4400, iLow: 0, iHigh: 50 },
-    { cLow: 4500, cHigh: 9400, iLow: 51, iHigh: 100 },
-    { cLow: 9500, cHigh: 12400, iLow: 101, iHigh: 150 },
-    { cLow: 12500, cHigh: 15400, iLow: 151, iHigh: 200 },
-    { cLow: 15500, cHigh: 30400, iLow: 201, iHigh: 300 },
-    { cLow: 30500, cHigh: 50400, iLow: 301, iHigh: 500 },
+    { cLow: 0, cHigh: 4.4, iLow: 0, iHigh: 50 },
+    { cLow: 4.5, cHigh: 9.4, iLow: 51, iHigh: 100 },
+    { cLow: 9.5, cHigh: 12.4, iLow: 101, iHigh: 150 },
+    { cLow: 12.5, cHigh: 15.4, iLow: 151, iHigh: 200 },
+    { cLow: 15.5, cHigh: 30.4, iLow: 201, iHigh: 300 },
+    { cLow: 30.5, cHigh: 50.4, iLow: 301, iHigh: 500 },
   ],
-  // O3: 8-hour average - CONVERTED TO PPB (EPA ppm * 1000)
-  // EPA uses ppm: 0-0.054, 0.055-0.070, 0.071-0.085, 0.086-0.105, 0.106-0.200, 0.201-0.604
-  // In ppb: 0-54, 55-70, 71-85, 86-105, 106-200, 201-604
-  // Truncate to integer (ppb)
+  // O3: 8-hour average (ppm) - Truncate to 3 decimals (0.001 ppm)
   O3: [
-    { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },
-    { cLow: 55, cHigh: 70, iLow: 51, iHigh: 100 },
-    { cLow: 71, cHigh: 85, iLow: 101, iHigh: 150 },
-    { cLow: 86, cHigh: 105, iLow: 151, iHigh: 200 },
-    { cLow: 106, cHigh: 200, iLow: 201, iHigh: 300 },
-    { cLow: 201, cHigh: 604, iLow: 301, iHigh: 500 },
+    { cLow: 0, cHigh: 0.054, iLow: 0, iHigh: 50 },
+    { cLow: 0.055, cHigh: 0.070, iLow: 51, iHigh: 100 },
+    { cLow: 0.071, cHigh: 0.085, iLow: 101, iHigh: 150 },
+    { cLow: 0.086, cHigh: 0.105, iLow: 151, iHigh: 200 },
+    { cLow: 0.106, cHigh: 0.200, iLow: 201, iHigh: 300 },
+    { cLow: 0.201, cHigh: 0.604, iLow: 301, iHigh: 500 },
   ],
   // PM2.5: 24-hour average (µg/m³) - Updated May 2024 - Truncate to 1 decimal
   PM25: [
@@ -120,20 +116,55 @@ const BREAKPOINTS = {
   ]
 };
 
-// EPA Truncation Rules - adapted for ppb input
-function truncateConcentration(value: number, pollutant: keyof typeof BREAKPOINTS): number {
+// Unit information for each pollutant
+const POLLUTANT_UNITS: Record<keyof typeof BREAKPOINTS, string> = {
+  NO2: 'ppb',
+  SO2: 'ppb',
+  CO: 'ppm',
+  O3: 'ppm',
+  PM25: 'µg/m³',
+  PM10: 'µg/m³'
+};
+
+// Convert sensor data to EPA units
+// Pulsonic/air quality sensors typically output ALL gas concentrations in ppb
+// EPA requires: CO in ppm, O3 in ppm, NO2 in ppb, SO2 in ppb
+// This function ALWAYS converts CO and O3 from ppb to ppm (divide by 1000)
+function convertSensorToEPA(value: number, pollutant: keyof typeof BREAKPOINTS): number {
+  if (value <= 0) return 0;
+  
+  switch (pollutant) {
+    case 'CO':
+      // Pulsonic sensors output CO in ppb
+      // EPA breakpoints are in ppm, so divide by 1000
+      return value / 1000;
+    case 'O3':
+      // Pulsonic sensors output O3 in ppb
+      // EPA breakpoints are in ppm, so divide by 1000
+      return value / 1000;
+    default:
+      // NO2, SO2: already in ppb (EPA native unit)
+      // PM2.5, PM10: already in µg/m³ (EPA native unit)
+      return value;
+  }
+}
+
+// EPA Truncation Rules - EXACT per specification
+function truncateForEPA(value: number, pollutant: keyof typeof BREAKPOINTS): number {
   if (value < 0) return 0;
   
   switch (pollutant) {
+    case 'O3':
+      // Truncate to 3 decimal places (0.001 ppm)
+      return Math.floor(value * 1000) / 1000;
+    case 'CO':
     case 'PM25':
-      // Truncate to 1 decimal place
+      // Truncate to 1 decimal place (0.1 ppm for CO, 0.1 µg/m³ for PM2.5)
       return Math.floor(value * 10) / 10;
     case 'PM10':
     case 'NO2':
     case 'SO2':
-    case 'CO':
-    case 'O3':
-      // Truncate to integer (all gas pollutants in ppb)
+      // Truncate to integer
       return Math.floor(value);
     default:
       return Math.floor(value);
@@ -142,36 +173,40 @@ function truncateConcentration(value: number, pollutant: keyof typeof BREAKPOINT
 
 // EPA AQI Formula: I = [(I_high - I_low) / (C_high - C_low)] * (C - C_low) + I_low
 function calculateSubIndex(rawConcentration: number, pollutant: keyof typeof BREAKPOINTS): number {
-  // Truncate per EPA rules
-  const truncatedConc = truncateConcentration(rawConcentration, pollutant);
+  // Convert sensor data to EPA units
+  const converted = convertSensorToEPA(rawConcentration, pollutant);
   
-  if (truncatedConc < 0) return 0;
+  // Truncate per EPA rules
+  const truncated = truncateForEPA(converted, pollutant);
+  
+  if (truncated < 0) return 0;
   
   const breakpoints = BREAKPOINTS[pollutant];
   
   // Find the appropriate breakpoint range
   for (const bp of breakpoints) {
-    if (truncatedConc >= bp.cLow && truncatedConc <= bp.cHigh) {
+    if (truncated >= bp.cLow && truncated <= bp.cHigh) {
       // Apply EPA formula
-      const aqi = ((bp.iHigh - bp.iLow) / (bp.cHigh - bp.cLow)) * (truncatedConc - bp.cLow) + bp.iLow;
+      const aqi = ((bp.iHigh - bp.iLow) / (bp.cHigh - bp.cLow)) * (truncated - bp.cLow) + bp.iLow;
       return Math.round(aqi);
     }
   }
   
   // If concentration exceeds highest breakpoint, extrapolate
   const lastBp = breakpoints[breakpoints.length - 1];
-  if (truncatedConc > lastBp.cHigh) {
+  if (truncated > lastBp.cHigh) {
     const slope = (lastBp.iHigh - lastBp.iLow) / (lastBp.cHigh - lastBp.cLow);
-    const extrapolated = lastBp.iHigh + slope * (truncatedConc - lastBp.cHigh);
+    const extrapolated = lastBp.iHigh + slope * (truncated - lastBp.cHigh);
     return Math.round(Math.min(extrapolated, 999));
   }
   
   return 0;
 }
 
-// Get the truncated concentration used for AQI (for display consistency)
-function getTruncatedForDisplay(rawValue: number, pollutant: keyof typeof BREAKPOINTS): number {
-  return truncateConcentration(rawValue, pollutant);
+// Get the truncated concentration in EPA units (for display consistency)
+function getTruncatedInEPAUnits(rawValue: number, pollutant: keyof typeof BREAKPOINTS): number {
+  const converted = convertSensorToEPA(rawValue, pollutant);
+  return truncateForEPA(converted, pollutant);
 }
 
 export function getAQILabel(aqi: number): string {
@@ -276,7 +311,7 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
 
           // Process each station
           const stationSummaries: StationSummary[] = Array.from(stationsMap.entries()).map(([name, values]) => {
-            // Get maximum concentrations for each pollutant (raw values from CSV)
+            // Get maximum concentrations for each pollutant (raw sensor values)
             const maxNO2 = values.no2.length ? Math.max(...values.no2) : 0;
             const maxSO2 = values.so2.length ? Math.max(...values.so2) : 0;
             const maxCO = values.co.length ? Math.max(...values.co) : 0;
@@ -320,17 +355,20 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             pollutantData.sort((a, b) => b.aqi - a.aqi);
             const mainPollutantInfo = pollutantData[0];
             
-            // Use truncated concentration for display consistency
-            const mainPollutantConcentration = getTruncatedForDisplay(
+            // Get truncated concentration in EPA units for display
+            const mainPollutantConcentration = getTruncatedInEPAUnits(
               mainPollutantInfo.rawConc, 
               mainPollutantInfo.key
             );
+            
+            const mainPollutantUnit = POLLUTANT_UNITS[mainPollutantInfo.key];
 
             return {
               name,
               maxNO2, maxSO2, maxCO, maxO3, maxPM25, maxPM10,
               mainPollutant: mainPollutantInfo.name,
               mainPollutantConcentration,
+              mainPollutantUnit,
               aqi,
               aqiBreakdown
             };
@@ -351,6 +389,7 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
           const criticalStation = criticalStationData?.name || '';
           const criticalPollutant = criticalStationData?.mainPollutant || 'PM10';
           const criticalConcentration = criticalStationData?.mainPollutantConcentration || 0;
+          const criticalUnit = criticalStationData?.mainPollutantUnit || 'µg/m³';
           
           // Extract date from first row
           const dateStr = data[0].date ? data[0].date.split(' ')[0] : new Date().toLocaleDateString('fr-FR');
@@ -362,7 +401,8 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             cityMaxAQI,
             criticalStation,
             criticalPollutant,
-            criticalConcentration
+            criticalConcentration,
+            criticalUnit
           });
 
         } catch (err) {
