@@ -32,13 +32,89 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    window.print();
+    const originalTitle = document.title;
+    const safeDate = data.date.replace(/[\/\\:*?"<>|]/g, '-');
+    const filename = `Bulletin Classique Qualité de l'air du ${safeDate}`;
+    
+    document.title = filename;
+
+    setTimeout(() => {
+      window.print();
+      
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 500);
+    }, 500);
   };
 
   const advice = getHealthAdvice(data.cityMaxAQI);
 
   return (
     <div className="flex flex-col items-center bg-slate-100 min-h-screen">
+      <style>{`
+        @media print {
+          @page { 
+            size: A4 portrait; 
+            margin: 0; 
+          }
+          
+          body { 
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+
+          .no-print { display: none !important; }
+          
+          #root, .min-h-screen {
+            margin: 0;
+            padding: 0;
+            background: white;
+            height: auto;
+            min-height: 0;
+            display: block;
+          }
+
+          #bulletin-content {
+            margin: 0 !important;
+            padding: 5mm !important;
+            width: 210mm !important;
+            min-height: 297mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: white;
+            overflow: visible;
+            transform: scale(0.92);
+            transform-origin: top left;
+          }
+
+          #bulletin-wrapper {
+            box-shadow: none !important;
+          }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          section, table, .grid {
+            page-break-inside: avoid;
+          }
+        }
+
+        @media screen {
+          #bulletin-content {
+            width: 210mm;
+            min-height: 296mm;
+            background: white;
+            margin: 0 auto;
+            box-sizing: border-box;
+          }
+        }
+      `}</style>
       {/* Toolbar - Hidden in print */}
       <div className="flex gap-3 my-8 sticky top-4 z-50 bg-white/90 backdrop-blur p-3 rounded-full shadow-lg border no-print">
         <Button variant="outline" onClick={onReset} className="rounded-full" data-testid="button-new">
