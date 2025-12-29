@@ -48,8 +48,17 @@ export interface DailySummary {
 
 // EPA AQI Breakpoints - Updated May 2024
 // Reference: https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf
+//
+// IMPORTANT: Input units from Pulsonic/air quality sensors:
+// - NO2, SO2: ppb (standard for AQ sensors)
+// - CO: ppb (sensors typically report ppb, EPA uses ppm - we convert internally)
+// - O3: ppb (sensors typically report ppb, EPA uses ppm - we convert internally)
+// - PM2.5, PM10: µg/m³ (standard)
+//
+// Breakpoints below are in the SENSOR UNITS (ppb for gases except PM)
+
 const BREAKPOINTS = {
-  // NO2: 1-hour average (ppb)
+  // NO2: 1-hour average (ppb) - Truncate to integer
   NO2: [
     { cLow: 0, cHigh: 53, iLow: 0, iHigh: 50 },
     { cLow: 54, cHigh: 100, iLow: 51, iHigh: 100 },
@@ -58,7 +67,7 @@ const BREAKPOINTS = {
     { cLow: 650, cHigh: 1249, iLow: 201, iHigh: 300 },
     { cLow: 1250, cHigh: 2049, iLow: 301, iHigh: 500 },
   ],
-  // SO2: 1-hour average (ppb) for AQI 0-200
+  // SO2: 1-hour average (ppb) - Truncate to integer
   SO2: [
     { cLow: 0, cHigh: 35, iLow: 0, iHigh: 50 },
     { cLow: 36, cHigh: 75, iLow: 51, iHigh: 100 },
@@ -67,34 +76,40 @@ const BREAKPOINTS = {
     { cLow: 305, cHigh: 604, iLow: 201, iHigh: 300 },
     { cLow: 605, cHigh: 1004, iLow: 301, iHigh: 500 },
   ],
-  // CO: 8-hour average (ppb) - Note: EPA uses ppm, we convert
+  // CO: 8-hour average - CONVERTED TO PPB (EPA ppm * 1000)
+  // EPA uses ppm: 0-4.4, 4.5-9.4, 9.5-12.4, 12.5-15.4, 15.5-30.4, 30.5-50.4
+  // In ppb: 0-4400, 4500-9400, 9500-12400, 12500-15400, 15500-30400, 30500-50400
+  // Truncate to integer (ppb)
   CO: [
-    { cLow: 0, cHigh: 4400, iLow: 0, iHigh: 50 },       // 4.4 ppm
-    { cLow: 4500, cHigh: 9400, iLow: 51, iHigh: 100 },  // 9.4 ppm
+    { cLow: 0, cHigh: 4400, iLow: 0, iHigh: 50 },
+    { cLow: 4500, cHigh: 9400, iLow: 51, iHigh: 100 },
     { cLow: 9500, cHigh: 12400, iLow: 101, iHigh: 150 },
     { cLow: 12500, cHigh: 15400, iLow: 151, iHigh: 200 },
     { cLow: 15500, cHigh: 30400, iLow: 201, iHigh: 300 },
     { cLow: 30500, cHigh: 50400, iLow: 301, iHigh: 500 },
   ],
-  // O3: 8-hour average (ppb) - Note: EPA uses ppm, we use ppb
+  // O3: 8-hour average - CONVERTED TO PPB (EPA ppm * 1000)
+  // EPA uses ppm: 0-0.054, 0.055-0.070, 0.071-0.085, 0.086-0.105, 0.106-0.200, 0.201-0.604
+  // In ppb: 0-54, 55-70, 71-85, 86-105, 106-200, 201-604
+  // Truncate to integer (ppb)
   O3: [
-    { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },      // 0.054 ppm
-    { cLow: 55, cHigh: 70, iLow: 51, iHigh: 100 },   // 0.070 ppm
-    { cLow: 71, cHigh: 85, iLow: 101, iHigh: 150 },  // 0.085 ppm
-    { cLow: 86, cHigh: 105, iLow: 151, iHigh: 200 }, // 0.105 ppm
+    { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },
+    { cLow: 55, cHigh: 70, iLow: 51, iHigh: 100 },
+    { cLow: 71, cHigh: 85, iLow: 101, iHigh: 150 },
+    { cLow: 86, cHigh: 105, iLow: 151, iHigh: 200 },
     { cLow: 106, cHigh: 200, iLow: 201, iHigh: 300 },
     { cLow: 201, cHigh: 604, iLow: 301, iHigh: 500 },
   ],
-  // PM2.5: 24-hour average (µg/m³) - Updated May 2024
+  // PM2.5: 24-hour average (µg/m³) - Updated May 2024 - Truncate to 1 decimal
   PM25: [
-    { cLow: 0, cHigh: 9.0, iLow: 0, iHigh: 50 },       // Changed from 12.0 in 2024
+    { cLow: 0, cHigh: 9.0, iLow: 0, iHigh: 50 },
     { cLow: 9.1, cHigh: 35.4, iLow: 51, iHigh: 100 },
     { cLow: 35.5, cHigh: 55.4, iLow: 101, iHigh: 150 },
     { cLow: 55.5, cHigh: 125.4, iLow: 151, iHigh: 200 },
     { cLow: 125.5, cHigh: 225.4, iLow: 201, iHigh: 300 },
     { cLow: 225.5, cHigh: 325.4, iLow: 301, iHigh: 500 },
   ],
-  // PM10: 24-hour average (µg/m³)
+  // PM10: 24-hour average (µg/m³) - Truncate to integer
   PM10: [
     { cLow: 0, cHigh: 54, iLow: 0, iHigh: 50 },
     { cLow: 55, cHigh: 154, iLow: 51, iHigh: 100 },
@@ -105,7 +120,7 @@ const BREAKPOINTS = {
   ]
 };
 
-// Truncation rules per EPA specification
+// EPA Truncation Rules - adapted for ppb input
 function truncateConcentration(value: number, pollutant: keyof typeof BREAKPOINTS): number {
   if (value < 0) return 0;
   
@@ -116,12 +131,9 @@ function truncateConcentration(value: number, pollutant: keyof typeof BREAKPOINT
     case 'PM10':
     case 'NO2':
     case 'SO2':
-      // Truncate to integer
-      return Math.floor(value);
     case 'CO':
     case 'O3':
-      // O3 truncate to 3 decimals (in ppm), CO to 1 decimal
-      // Since we use ppb, just floor for simplicity
+      // Truncate to integer (all gas pollutants in ppb)
       return Math.floor(value);
     default:
       return Math.floor(value);
@@ -129,8 +141,9 @@ function truncateConcentration(value: number, pollutant: keyof typeof BREAKPOINT
 }
 
 // EPA AQI Formula: I = [(I_high - I_low) / (C_high - C_low)] * (C - C_low) + I_low
-function calculateSubIndex(concentration: number, pollutant: keyof typeof BREAKPOINTS): number {
-  const truncatedConc = truncateConcentration(concentration, pollutant);
+function calculateSubIndex(rawConcentration: number, pollutant: keyof typeof BREAKPOINTS): number {
+  // Truncate per EPA rules
+  const truncatedConc = truncateConcentration(rawConcentration, pollutant);
   
   if (truncatedConc < 0) return 0;
   
@@ -145,16 +158,20 @@ function calculateSubIndex(concentration: number, pollutant: keyof typeof BREAKP
     }
   }
   
-  // If concentration exceeds highest breakpoint, extrapolate or cap at 500
+  // If concentration exceeds highest breakpoint, extrapolate
   const lastBp = breakpoints[breakpoints.length - 1];
   if (truncatedConc > lastBp.cHigh) {
-    // Extrapolate beyond 500 using last breakpoint slope
     const slope = (lastBp.iHigh - lastBp.iLow) / (lastBp.cHigh - lastBp.cLow);
     const extrapolated = lastBp.iHigh + slope * (truncatedConc - lastBp.cHigh);
-    return Math.round(Math.min(extrapolated, 999)); // Cap at 999 for display
+    return Math.round(Math.min(extrapolated, 999));
   }
   
   return 0;
+}
+
+// Get the truncated concentration used for AQI (for display consistency)
+function getTruncatedForDisplay(rawValue: number, pollutant: keyof typeof BREAKPOINTS): number {
+  return truncateConcentration(rawValue, pollutant);
 }
 
 export function getAQILabel(aqi: number): string {
@@ -259,7 +276,7 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
 
           // Process each station
           const stationSummaries: StationSummary[] = Array.from(stationsMap.entries()).map(([name, values]) => {
-            // Get maximum concentrations for each pollutant
+            // Get maximum concentrations for each pollutant (raw values from CSV)
             const maxNO2 = values.no2.length ? Math.max(...values.no2) : 0;
             const maxSO2 = values.so2.length ? Math.max(...values.so2) : 0;
             const maxCO = values.co.length ? Math.max(...values.co) : 0;
@@ -289,30 +306,30 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
             const aqi = Math.max(aqiNO2, aqiSO2, aqiCO, aqiO3, aqiPM25, aqiPM10);
             
             // Determine the main pollutant (the one with highest AQI)
-            let mainPollutant = 'NO2';
-            let maxSubIndex = aqiNO2;
-            let mainPollutantConcentration = maxNO2;
-            
-            const pollutantChecks = [
-              { name: 'SO2', aqi: aqiSO2, conc: maxSO2 },
-              { name: 'CO', aqi: aqiCO, conc: maxCO },
-              { name: 'O3', aqi: aqiO3, conc: maxO3 },
-              { name: 'PM2.5', aqi: aqiPM25, conc: maxPM25 },
-              { name: 'PM10', aqi: aqiPM10, conc: maxPM10 },
+            type PollutantKey = keyof typeof BREAKPOINTS;
+            const pollutantData: { name: string; aqi: number; rawConc: number; key: PollutantKey }[] = [
+              { name: 'NO2', aqi: aqiNO2, rawConc: maxNO2, key: 'NO2' },
+              { name: 'SO2', aqi: aqiSO2, rawConc: maxSO2, key: 'SO2' },
+              { name: 'CO', aqi: aqiCO, rawConc: maxCO, key: 'CO' },
+              { name: 'O3', aqi: aqiO3, rawConc: maxO3, key: 'O3' },
+              { name: 'PM2.5', aqi: aqiPM25, rawConc: maxPM25, key: 'PM25' },
+              { name: 'PM10', aqi: aqiPM10, rawConc: maxPM10, key: 'PM10' },
             ];
             
-            for (const check of pollutantChecks) {
-              if (check.aqi > maxSubIndex) {
-                maxSubIndex = check.aqi;
-                mainPollutant = check.name;
-                mainPollutantConcentration = check.conc;
-              }
-            }
+            // Sort by AQI descending to find the main pollutant
+            pollutantData.sort((a, b) => b.aqi - a.aqi);
+            const mainPollutantInfo = pollutantData[0];
+            
+            // Use truncated concentration for display consistency
+            const mainPollutantConcentration = getTruncatedForDisplay(
+              mainPollutantInfo.rawConc, 
+              mainPollutantInfo.key
+            );
 
             return {
               name,
               maxNO2, maxSO2, maxCO, maxO3, maxPM25, maxPM10,
-              mainPollutant,
+              mainPollutant: mainPollutantInfo.name,
               mainPollutantConcentration,
               aqi,
               aqiBreakdown
