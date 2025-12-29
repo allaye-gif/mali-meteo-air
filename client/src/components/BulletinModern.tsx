@@ -57,20 +57,20 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
   };
 
   const advice = getHealthAdvice(data.cityMaxAQI);
-  const mainStation = data.stations.find(s => s.aqi === data.cityMaxAQI) || data.stations[0];
-  const mainPollutant = mainStation?.mainPollutant || 'PM10';
   
-  const getConcentration = () => {
-    if (!mainStation) return '---';
-    switch(mainPollutant) {
-      case 'PM10': return `${mainStation.maxPM10.toFixed(0)} µg/m³`;
-      case 'PM2.5': return `${mainStation.maxPM25.toFixed(0)} µg/m³`;
-      case 'NO2': return `${mainStation.maxNO2.toFixed(0)} ppb`;
-      case 'SO2': return `${mainStation.maxSO2.toFixed(0)} ppb`;
-      case 'CO': return `${mainStation.maxCO.toFixed(0)} ppb`;
-      case 'O3': return `${mainStation.maxO3.toFixed(0)} ppb`;
-      default: return '---';
+  // Use the pre-calculated critical data from the algorithm
+  const criticalPollutant = data.criticalPollutant || 'PM10';
+  const criticalStation = data.criticalStation || (data.stations[0]?.name || '');
+  
+  const getConcentrationDisplay = () => {
+    const conc = data.criticalConcentration;
+    if (!conc) return '---';
+    
+    // PM uses µg/m³, others use ppb
+    if (criticalPollutant === 'PM10' || criticalPollutant === 'PM2.5') {
+      return `${conc.toFixed(0)} µg/m³`;
     }
+    return `${conc.toFixed(0)} ppb`;
   };
 
   return (
@@ -206,15 +206,15 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
               <div className="space-y-2 text-xs border-t border-gray-100 pt-4 mt-4">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#78350F]" />
-                  <span className="text-gray-700"><strong>Polluant Critique :</strong> {mainPollutant}</span>
+                  <span className="text-gray-700"><strong>Polluant Critique :</strong> {criticalPollutant}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-[#1D70F2]" strokeWidth={1.5} />
-                  <span className="text-gray-700"><strong>Station :</strong> {mainStation?.name.replace('ML_', '').replace(/_/g, ' ').replace('QA', '').trim()}</span>
+                  <span className="text-gray-700"><strong>Station :</strong> {criticalStation.replace('ML_', '').replace(/_/g, ' ').replace('QA', '').trim()}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Activity className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
-                  <span className="text-gray-700"><strong>Concentration Max :</strong> {getConcentration()}</span>
+                  <span className="text-gray-700"><strong>Concentration Max :</strong> {getConcentrationDisplay()}</span>
                 </div>
               </div>
             </div>
@@ -227,7 +227,7 @@ export function BulletinModern({ data, onReset, onToggleDesign }: BulletinModern
               </h3>
               <div className="grid grid-cols-2 gap-3 flex-1">
                 {pollutantData.map((pollutant) => {
-                  const isMain = pollutant.key === mainPollutant;
+                  const isMain = pollutant.key === criticalPollutant;
                   const IconComponent = pollutant.icon;
                   return (
                     <div 

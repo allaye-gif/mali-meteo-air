@@ -194,7 +194,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
                   La qualité de l'air est qualifiée de <strong style={{ color: getStatusColor(data.cityMaxAQI) }}>{getAQILabel(data.cityMaxAQI).toLowerCase()}</strong>.
                 </p>
                 <p className="text-xs text-slate-700 mt-2 leading-relaxed font-medium">
-                  Le polluant majoritaire observé sur le réseau de surveillance est le <strong className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-900">{data.stations.find(s => s.aqi === data.cityMaxAQI)?.mainPollutant || 'PM10'}</strong>.
+                  Le polluant majoritaire observé sur le réseau de surveillance est le <strong className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-900">{data.criticalPollutant || 'PM10'}</strong>.
                 </p>
               </div>
             </div>

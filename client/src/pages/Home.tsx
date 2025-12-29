@@ -12,7 +12,7 @@ type DesignType = 'classic' | 'modern';
 export default function Home() {
   const [data, setData] = useState<DailySummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedDesign, setSelectedDesign] = useState<DesignType>('classic');
+  const [selectedDesign, setSelectedDesign] = useState<DesignType>('modern');
   const { toast } = useToast();
   
   const toggleDesign = () => {
