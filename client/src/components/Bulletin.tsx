@@ -77,7 +77,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
 
           #bulletin-content {
             margin: 0 !important;
-            padding: 8mm 12mm !important;
+            padding: 10mm 14mm !important;
             width: 210mm !important;
             min-height: 297mm !important;
             height: auto !important;
@@ -133,7 +133,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
         <div 
           ref={contentRef}
           id="bulletin-content"
-          className="bg-white relative text-slate-800 flex flex-col p-[8mm_12mm] box-border"
+          className="bg-white relative text-slate-800 flex flex-col justify-between p-[10mm_14mm] box-border"
         >
           {/* HEADER */}
           <header className="flex justify-between items-start border-b-2 border-blue-900 pb-3 mb-4">
@@ -168,7 +168,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           </header>
 
           {/* SUMMARY SECTION */}
-          <section className="mb-4">
+          <section className="mb-5">
             <div className="flex items-stretch bg-gradient-to-r from-slate-50 to-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
               <div className="w-1/3 p-3 flex flex-col items-center justify-center border-r border-slate-100">
                 <div className="text-[9px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Indice Global</div>
@@ -201,7 +201,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           </section>
 
           {/* DATA TABLE */}
-          <section className="mb-4">
+          <section className="mb-5">
             <h3 className="font-bold text-blue-900 uppercase mb-2 text-[11px] border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
               <Wind className="w-3.5 h-3.5" />
               Détails du Réseau de Surveillance (Concentrations Max)
@@ -246,7 +246,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           </section>
 
           {/* ECO GESTE */}
-          <section className="mb-4 grid grid-cols-3 gap-3">
+          <section className="mb-5 grid grid-cols-3 gap-3">
              <div className="col-span-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-center gap-3 shadow-sm">
                 <div className="bg-emerald-100 p-2 rounded-full text-emerald-700">
                    <Leaf className="w-5 h-5" />
@@ -268,7 +268,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           </section>
 
           {/* LEGEND & ADVICE GRID */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-5">
              {/* Legend */}
              <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
                 <h3 className="font-bold text-slate-700 uppercase mb-2 text-[10px] flex items-center gap-1.5 border-b pb-2">
@@ -316,7 +316,7 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           </div>
 
           {/* FOOTER */}
-          <footer className="text-center border-t-2 border-blue-900 pt-3 mt-auto">
+          <footer className="text-center border-t-2 border-blue-900 pt-4">
             <p className="font-bold text-blue-900 text-[11px] uppercase">Agence Nationale de la Météorologie (MALI MÉTÉO)</p>
           </footer>
 
