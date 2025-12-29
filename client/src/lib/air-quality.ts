@@ -192,12 +192,11 @@ function calculateSubIndex(rawConcentration: number, pollutant: keyof typeof BRE
     }
   }
   
-  // If concentration exceeds highest breakpoint, extrapolate
+  // If concentration exceeds highest breakpoint, cap at 500 (EPA standard)
+  // EPA AQI scale is 0-500; values above are reported as ">500" or simply 500
   const lastBp = breakpoints[breakpoints.length - 1];
   if (truncated > lastBp.cHigh) {
-    const slope = (lastBp.iHigh - lastBp.iLow) / (lastBp.cHigh - lastBp.cLow);
-    const extrapolated = lastBp.iHigh + slope * (truncated - lastBp.cHigh);
-    return Math.round(Math.min(extrapolated, 999));
+    return 500; // Cap at maximum AQI per EPA specification
   }
   
   return 0;
@@ -351,8 +350,25 @@ export const parseCSV = (file: File): Promise<DailySummary | null> => {
               { name: 'PM10', aqi: aqiPM10, rawConc: maxPM10, key: 'PM10' },
             ];
             
-            // Sort by AQI descending to find the main pollutant
-            pollutantData.sort((a, b) => b.aqi - a.aqi);
+            // Sort by AQI descending, then by raw concentration descending (for tie-breaking)
+            // This ensures that when multiple pollutants are at AQI=500, 
+            // the one with the highest concentration is identified as critical
+            pollutantData.sort((a, b) => {
+              if (b.aqi !== a.aqi) {
+                return b.aqi - a.aqi; // Higher AQI first
+              }
+              // If AQI is equal (both at 500), compare by how much they exceed their max breakpoint
+              // Calculate severity ratio: how many times over the max breakpoint
+              const getExceedanceRatio = (conc: number, key: typeof a.key): number => {
+                const bps = BREAKPOINTS[key];
+                const maxConc = bps[bps.length - 1].cHigh;
+                const truncatedConc = truncateForEPA(convertSensorToEPA(conc, key), key);
+                return truncatedConc / maxConc; // Ratio of concentration to max breakpoint
+              };
+              const ratioA = getExceedanceRatio(a.rawConc, a.key);
+              const ratioB = getExceedanceRatio(b.rawConc, b.key);
+              return ratioB - ratioA; // Higher ratio (more severe) first
+            });
             const mainPollutantInfo = pollutantData[0];
             
             // Get truncated concentration in EPA units for display
