@@ -77,17 +77,18 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
 
           #bulletin-content {
             margin: 0 !important;
-            padding: 5mm !important;
+            padding: 4mm !important;
             width: 210mm !important;
-            min-height: 297mm !important;
+            height: 297mm !important;
+            max-height: 297mm !important;
             box-shadow: none !important;
             border: none !important;
             position: absolute;
             top: 0;
             left: 0;
             background: white;
-            overflow: visible;
-            transform: scale(0.92);
+            overflow: hidden;
+            transform: scale(0.88);
             transform-origin: top left;
           }
 
@@ -103,6 +104,15 @@ export function Bulletin({ data, onReset, onToggleDesign }: BulletinProps) {
           section, table, .grid {
             page-break-inside: avoid;
           }
+
+          header { margin-bottom: 8px !important; padding-bottom: 8px !important; }
+          section { margin-bottom: 6px !important; }
+          .mb-6 { margin-bottom: 8px !important; }
+          .mb-4 { margin-bottom: 6px !important; }
+          .p-4 { padding: 8px !important; }
+          .p-6 { padding: 10px !important; }
+          table { font-size: 9px !important; line-height: 1.2 !important; }
+          table th, table td { padding: 4px !important; }
         }
 
         @media screen {
