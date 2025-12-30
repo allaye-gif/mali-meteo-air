@@ -1,7 +1,13 @@
 import { type Server } from "node:http";
-
+import path from "path"; // <--- AJOUT
+import { fileURLToPath } from "url"; // <--- AJOUT
 import express, { type Express, type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+
+// --- Configuration pour ES Modules ---
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// -------------------------------------
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -71,17 +77,31 @@ export default async function runApp(
     throw err;
   });
 
-  // importantly run the final setup after setting up all the other routes so
-  // the catch-all route doesn't interfere with the other routes
   await setup(app, server);
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // --- CONFIGURATION PRODUCTION (POUR RENDER) ---
+  // Si on est en production, on sert les fichiers du site React (dossier dist)
+  if (process.env.NODE_ENV === "production") {
+    // On pointe vers le dossier dist à la racine du projet
+    const distPath = path.join(process.cwd(), "dist");
+    
+    // 1. Servir les fichiers statiques (JS, CSS, Images)
+    app.use(express.static(distPath));
+
+    // 2. Pour toute route non-API, renvoyer index.html (pour que React gère la page)
+    app.get("*", (_req, res) => {
+      // Vérifier que ce n'est pas une requête API avant de renvoyer le HTML
+      if (!_req.path.startsWith("/api")) {
+        res.sendFile(path.join(distPath, "index.html"));
+      }
+    });
+    
+    log(`Static files serving configured from: ${distPath}`);
+  }
+  // ----------------------------------------------
+
   const port = parseInt(process.env.PORT || '5000', 10);
   
-  // CORRECTION ICI : Version simplifiée pour Windows
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
