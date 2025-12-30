@@ -8,8 +8,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-# On installe les librairies Python utilisées par ton script (pandas, requests)
-# --break-system-packages est nécessaire sur les versions récentes de Debian/Python
+# On installe les librairies Python utilisées par ton script
 RUN pip3 install pandas requests --break-system-packages
 
 # --- CONFIGURATION NODE.JS ---
@@ -25,13 +24,17 @@ RUN npm install
 COPY . .
 
 # On construit le site (Frontend + Backend)
-# Cela va créer le dossier 'dist' que le serveur va servir
+# Cela va créer le dossier 'dist'
 RUN npm run build
 
+# --- CORRECTION CRUCIALE ICI ---
+# On copie manuellement le script Python dans le dossier 'dist' pour qu'il soit avec le serveur
+RUN cp server/pulsonic_worker.py dist/
+# -------------------------------
+
 # --- DÉMARRAGE ---
-# On utilise le port 5000 par défaut
 ENV PORT=5000
 EXPOSE 5000
 
-# La commande de démarrage (utilise le script "start" de package.json)
+# La commande de démarrage
 CMD ["npm", "start"]
