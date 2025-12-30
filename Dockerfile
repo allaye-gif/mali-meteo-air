@@ -1,40 +1,36 @@
-# On utilise une image Linux légère avec Node.js 20
+# 1. On part d'une base Node.js
 FROM node:20-slim
 
-# --- INSTALLATION DE PYTHON ---
-# On installe Python 3, pip et les outils nécessaires
+# 2. INSTALLATION PYTHON (Mise à jour)
+# On ajoute 'python-is-python3' pour que la commande "python" fonctionne
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# On installe les librairies Python utilisées par ton script
+# 3. On installe les librairies nécessaires
 RUN pip3 install pandas requests --break-system-packages
 
-# --- CONFIGURATION NODE.JS ---
+# 4. Configuration Node.js
 WORKDIR /app
 
-# On copie les fichiers de config
+# On copie et installe les dépendances
 COPY package*.json ./
-
-# On installe les dépendances du site
 RUN npm install
 
-# On copie tout le reste du code
+# On copie tout le code
 COPY . .
 
-# On construit le site (Frontend + Backend)
-# Cela va créer le dossier 'dist'
+# On construit le site (crée le dossier 'dist')
 RUN npm run build
 
-# --- CORRECTION CRUCIALE ICI ---
-# On copie manuellement le script Python dans le dossier 'dist' pour qu'il soit avec le serveur
+# --- LA CORRECTION EST ICI ---
+# On copie le script Python DANS le dossier final 'dist' pour que le serveur le trouve
 RUN cp server/pulsonic_worker.py dist/
-# -------------------------------
+# -----------------------------
 
-# --- DÉMARRAGE ---
+# 5. Démarrage
 ENV PORT=5000
 EXPOSE 5000
-
-# La commande de démarrage
 CMD ["npm", "start"]
